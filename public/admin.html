@@ -150,6 +150,17 @@ imagen.onchange = ()=>{
 
 /* 🔥 GUARDAR (NUEVO BACKEND) */
 function guardar(){
+
+    if(!nombre.value || !precio.value || !cantidad.value){
+        msg.innerText = "❌ Completa todos los campos";
+        return;
+    }
+
+    if(!imagen.files[0]){
+        msg.innerText = "❌ Selecciona una imagen";
+        return;
+    }
+
     const formData = new FormData();
 
     formData.append("nombre", nombre.value);
@@ -161,7 +172,14 @@ function guardar(){
         method:"POST",
         body:formData
     })
-    .then(()=> {
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.error){
+            msg.innerText = "❌ " + data.error;
+            return;
+        }
+
         msg.innerText="✅ Producto guardado";
 
         nombre.value="";
@@ -171,6 +189,10 @@ function guardar(){
         preview.style.display="none";
 
         cargarProductos();
+    })
+    .catch(err=>{
+        console.log(err);
+        msg.innerText="❌ Error al guardar";
     });
 }
 
