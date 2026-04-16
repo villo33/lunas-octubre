@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 const multer = require("multer");
+const path = require("path");
 const { v2: cloudinary } = require("cloudinary");
 
 const app = express();
@@ -12,7 +13,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 const API = "/api";
 
@@ -24,12 +25,12 @@ cloudinary.config({
     api_secret: process.env.CLOUD_API_SECRET
 });
 
-/* ================== MULTER (MEMORIA) ================== */
+/* ================== MULTER ================== */
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-/* ================== FUNCIÓN SUBIR IMAGEN ================== */
+/* ================== SUBIR IMAGEN ================== */
 
 function subirImagen(buffer) {
     return new Promise((resolve, reject) => {
@@ -37,8 +38,8 @@ function subirImagen(buffer) {
             {
                 folder: "lunas_octubre",
                 transformation: [
-                    { width: 800, crop: "limit" }, // optimiza tamaño
-                    { quality: "auto" }            // optimiza peso
+                    { width: 800, crop: "limit" },
+                    { quality: "auto" }
                 ]
             },
             (error, result) => {
@@ -68,15 +69,10 @@ app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
     try {
         const { nombre, precio, cantidad } = req.body;
 
-        if (!nombre || !precio || !cantidad) {
-            return res.status(400).json({ error: "Faltan datos" });
+        if (!nombre || !precio || !cantidad || !req.file) {
+            return res.status(400).json({ error: "Datos incompletos" });
         }
 
-        if (!req.file) {
-            return res.status(400).json({ error: "Imagen requerida" });
-        }
-
-        /* SUBIR IMAGEN */
         const result = await subirImagen(req.file.buffer);
 
         const imagen = result.secure_url;
@@ -90,9 +86,12 @@ app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
                     return res.status(500).json({ error: "Error al guardar" });
                 }
 
+                // 🔥 DEVOLVER PRODUCTO NUEVO
                 res.json({
-                    mensaje: "Producto guardado",
                     id: response.insertId,
+                    nombre,
+                    precio,
+                    cantidad,
                     imagen
                 });
             }
@@ -139,17 +138,18 @@ app.put(`${API}/productos/:id`, (req, res) => {
     );
 });
 
-/* ================== RUTA BASE ================== */
+/* ================== RUTAS HTML ================== */
 
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-/* ================== MANEJO GLOBAL DE ERRORES ================== */
+app.get("/admin.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
 
-app.use((err, req, res, next) => {
-    console.log("🔥 Error global:", err);
-    res.status(500).json({ error: "Error inesperado" });
+app.get("/login.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 /* ================== SERVIDOR ================== */
