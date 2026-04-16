@@ -104,18 +104,12 @@ header p{
     padding:20px;
 }
 
-.card-content h3{
-    margin:0 0 10px;
-}
-
-/* PRECIO */
 .price{
     color:#ffd700;
     font-weight:bold;
     font-size:18px;
 }
 
-/* INFO */
 .info{
     font-size:13px;
     color:#bbb;
@@ -133,11 +127,6 @@ header p{
     text-decoration:none;
     margin-top:10px;
     font-weight:bold;
-    transition:0.3s;
-}
-
-.btn:hover{
-    transform:scale(1.05);
 }
 
 /* MODAL */
@@ -159,7 +148,7 @@ header p{
     border-radius:10px;
 }
 
-/* WHATSAPP FLOAT */
+/* WHATSAPP */
 .whatsapp{
     position:fixed;
     bottom:20px;
@@ -169,8 +158,6 @@ header p{
     padding:15px;
     border-radius:50%;
     font-size:20px;
-    text-decoration:none;
-    box-shadow:0 5px 15px rgba(0,0,0,0.3);
 }
 
 /* LOADER */
@@ -183,7 +170,6 @@ header p{
     justify-content:center;
     align-items:center;
     z-index:999;
-    font-size:20px;
 }
 
 .hidden{display:none;}
@@ -199,7 +185,7 @@ header p{
 </div>
 
 <header>
-<h1>Tejidos únicos hechos con amor 🧶✨</h1>
+<h1>productos exclusivos y buena calidad</h1>
 <p>Diseños exclusivos que iluminan tu estilo</p>
 
 <div class="search">
@@ -219,14 +205,16 @@ header p{
 
 let productosGlobal=[];
 
-fetch("https://tienda-crochet-dtlk.onrender.com/productos")
+/* 🔥 NUEVO BACKEND */
+fetch("https://lunas-octubre.onrender.com/api/productos")
 .then(res=>res.json())
 .then(data=>{
     productosGlobal=data;
     mostrar(data);
-    document.getElementById("loader").classList.add("hidden");
+    loader.classList.add("hidden");
 });
 
+/* MOSTRAR */
 function mostrar(data){
     const contenedor=document.getElementById("productos");
     contenedor.innerHTML="";
@@ -240,7 +228,7 @@ function mostrar(data){
         contenedor.innerHTML+=`
         <div class="card">
             <div class="img-container">
-                <img src="https://tienda-crochet-dtlk.onrender.com/uploads/${p.imagen}" onclick="verImagen('${p.imagen}')">
+                <img src="${p.imagen}" onclick="verImagen('${p.imagen}')">
             </div>
 
             <div class="card-content">
@@ -256,7 +244,7 @@ function mostrar(data){
                 </div>
 
                 <a class="btn" 
-                href="https://wa.me/573146679536?text=Hola quiero el producto: ${p.nombre} con precio $${p.precio}" 
+                href="https://wa.me/573137414274?text=Hola quiero el producto: ${p.nombre} con precio $${p.precio}" 
                 target="_blank">
                     Comprar por WhatsApp
                 </a>
@@ -275,7 +263,7 @@ buscador.addEventListener("input",()=>{
 /* MODAL */
 function verImagen(img){
     modal.style.display="flex";
-    imgModal.src="https://tienda-crochet-dtlk.onrender.com/uploads/"+img;
+    imgModal.src=img;
 }
 
 function cerrarModal(){

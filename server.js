@@ -28,57 +28,77 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+/* ================== FUNCIÓN SUBIR IMAGEN ================== */
+
+function subirImagen(buffer) {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                folder: "lunas_octubre",
+                transformation: [
+                    { width: 800, crop: "limit" }, // optimiza tamaño
+                    { quality: "auto" }            // optimiza peso
+                ]
+            },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            }
+        );
+        stream.end(buffer);
+    });
+}
+
 /* ================== PRODUCTOS ================== */
 
 /* LISTAR */
 app.get(`${API}/productos`, (req, res) => {
     db.query("SELECT * FROM productos_lunas ORDER BY id DESC", (err, data) => {
         if (err) {
-            console.log(err);
+            console.log("❌ Error BD:", err);
             return res.status(500).json({ error: "Error en BD" });
         }
         res.json(data);
     });
 });
 
-/* GUARDAR (SUBE A CLOUDINARY) */
+/* GUARDAR */
 app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
     try {
         const { nombre, precio, cantidad } = req.body;
+
+        if (!nombre || !precio || !cantidad) {
+            return res.status(400).json({ error: "Faltan datos" });
+        }
 
         if (!req.file) {
             return res.status(400).json({ error: "Imagen requerida" });
         }
 
-        /* SUBIR A CLOUDINARY */
-        const resultado = await cloudinary.uploader.upload_stream(
-            { folder: "lunas_octubre" },
-            (error, result) => {
-                if (error) {
-                    console.log(error);
-                    return res.status(500).json({ error: "Error subiendo imagen" });
+        /* SUBIR IMAGEN */
+        const result = await subirImagen(req.file.buffer);
+
+        const imagen = result.secure_url;
+
+        db.query(
+            "INSERT INTO productos_lunas (nombre, precio, imagen, cantidad) VALUES (?,?,?,?)",
+            [nombre, precio, imagen, cantidad],
+            (err, response) => {
+                if (err) {
+                    console.log("❌ Error insert:", err);
+                    return res.status(500).json({ error: "Error al guardar" });
                 }
 
-                const imagen = result.secure_url;
-
-                db.query(
-                    "INSERT INTO productos_lunas (nombre, precio, imagen, cantidad) VALUES (?,?,?,?)",
-                    [nombre, precio, imagen, cantidad],
-                    (err) => {
-                        if (err) {
-                            console.log(err);
-                            return res.status(500).json({ error: "Error al guardar" });
-                        }
-                        res.json({ mensaje: "Producto guardado" });
-                    }
-                );
+                res.json({
+                    mensaje: "Producto guardado",
+                    id: response.insertId,
+                    imagen
+                });
             }
         );
 
-        resultado.end(req.file.buffer);
-
     } catch (error) {
-        console.log(error);
+        console.log("❌ Error servidor:", error);
         res.status(500).json({ error: "Error servidor" });
     }
 });
@@ -89,7 +109,7 @@ app.delete(`${API}/productos/:id`, (req, res) => {
 
     db.query("DELETE FROM productos_lunas WHERE id=?", [id], (err) => {
         if (err) {
-            console.log(err);
+            console.log("❌ Error delete:", err);
             return res.status(500).json({ error: "Error al eliminar" });
         }
         res.json({ mensaje: "Producto eliminado" });
@@ -101,12 +121,16 @@ app.put(`${API}/productos/:id`, (req, res) => {
     const { id } = req.params;
     const { nombre, precio, cantidad } = req.body;
 
+    if (!nombre || !precio || !cantidad) {
+        return res.status(400).json({ error: "Datos incompletos" });
+    }
+
     db.query(
         "UPDATE productos_lunas SET nombre=?, precio=?, cantidad=? WHERE id=?",
         [nombre, precio, cantidad, id],
         (err) => {
             if (err) {
-                console.log(err);
+                console.log("❌ Error update:", err);
                 return res.status(500).json({ error: "Error al actualizar" });
             }
             res.json({ mensaje: "Producto actualizado" });
@@ -114,10 +138,17 @@ app.put(`${API}/productos/:id`, (req, res) => {
     );
 });
 
-/* ================== TEST ================== */
+/* ================== RUTA BASE ================== */
 
 app.get("/", (req, res) => {
-    res.send("🌙 API Lunas de Octubre con Cloudinary funcionando");
+    res.send("🌙 API Lunas de Octubre con Cloudinary funcionando 🚀");
+});
+
+/* ================== MANEJO GLOBAL DE ERRORES ================== */
+
+app.use((err, req, res, next) => {
+    console.log("🔥 Error global:", err);
+    res.status(500).json({ error: "Error inesperado" });
 });
 
 /* ================== SERVIDOR ================== */
