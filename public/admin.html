@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Lunas de Octubre</title>
+
+<style>
+body{
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+    color:white;
+}
+
+/* HEADER */
+header{
+    background: linear-gradient(135deg,#1f1c2c,#928dab);
+    padding:25px;
+    text-align:center;
+    font-size:26px;
+    font-weight:bold;
+    letter-spacing:1px;
+}
+
+/* BOTÓN LOGOUT */
+.logout-btn{
+    padding:10px 20px;
+    background: linear-gradient(135deg,#ff416c,#ff4b2b);
+    color:white;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    display:block;
+    margin:15px auto;
+    transition:0.3s;
+}
+.logout-btn:hover{
+    transform:scale(1.05);
+}
+
+/* FORMULARIO */
+.container{
+    max-width:500px;
+    margin:20px auto;
+    background: rgba(255,255,255,0.05);
+    padding:25px;
+    border-radius:20px;
+    backdrop-filter: blur(10px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
+}
+
+.container h3{
+    text-align:center;
+    margin-bottom:15px;
+}
+
+/* INPUTS */
+input{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border-radius:12px;
+    border:none;
+    outline:none;
+    background: rgba(255,255,255,0.1);
+    color:white;
+}
+
+input::placeholder{
+    color:#ccc;
+}
+
+/* BOTÓN GUARDAR */
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background: linear-gradient(135deg,#f7971e,#ffd200);
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+button:hover{
+    transform:scale(1.05);
+}
+
+/* PREVIEW */
+#preview{
+    width:100%;
+    display:none;
+    margin-top:10px;
+    border-radius:10px;
+}
+
+/* LISTA PRODUCTOS */
+.lista{
+    max-width:1000px;
+    margin:30px auto;
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+}
+
+/* TARJETAS */
+.card{
+    background: rgba(255,255,255,0.05);
+    padding:15px;
+    border-radius:15px;
+    backdrop-filter: blur(10px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.4);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+.card img{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    border-radius:10px;
+}
+
+.card h4{
+    margin:10px 0 5px;
+}
+
+.card p{
+    margin:5px 0;
+    color:#ccc;
+}
+
+/* BOTONES ACCIONES */
+.actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.actions button{
+    flex:1;
+    padding:8px;
+    font-size:12px;
+}
+
+.edit{
+    background: linear-gradient(135deg,#00c6ff,#0072ff);
+    color:white;
+}
+
+.delete{
+    background: linear-gradient(135deg,#ff416c,#ff4b2b);
+    color:white;
+}
+
+/* MENSAJE */
+.mensaje{
+    text-align:center;
+    margin-top:10px;
+    color:#ffd200;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>🌙 Lunas de Octubre - Admin</header>
+
+<button onclick="logout()" class="logout-btn">Cerrar sesión</button>
+
+<div class="container">
+<h3>Agregar Producto 🧶</h3>
+
+<input id="nombre" placeholder="Nombre">
+<input id="precio" placeholder="Precio">
+<input id="cantidad" placeholder="Cantidad">
+
+<input type="file" id="imagen">
+<img id="preview">
+
+<button onclick="guardar()">Guardar</button>
+<div id="msg" class="mensaje"></div>
+</div>
+
+<h3 style="text-align:center;">📦 Productos</h3>
+<div id="lista" class="lista"></div>
+
+<script>
+
+/* LOGIN */
+if(localStorage.getItem("ismari") !== "1326"){
+    window.location.href="login.html";
+}
+
+function logout(){
+    localStorage.removeItem("ismari");
+    window.location.href="login.html";
+}
+
+/* PREVIEW */
+imagen.onchange = ()=>{
+    const file = imagen.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e=>{
+        preview.src = e.target.result;
+        preview.style.display="block";
+    }
+
+    reader.readAsDataURL(file);
+}
+
+/* GUARDAR */
+function guardar(){
+    const formData = new FormData();
+
+    formData.append("nombre", nombre.value);
+    formData.append("precio", precio.value);
+    formData.append("cantidad", cantidad.value);
+    formData.append("imagen", imagen.files[0]);
+
+    fetch("https://tienda-crochet-dtlk.onrender.com/productos",{
+        method:"POST",
+        body:formData
+    })
+    .then(()=> {
+        msg.innerText="✅ Producto guardado";
+
+        nombre.value="";
+        precio.value="";
+        cantidad.value="";
+        imagen.value="";
+        preview.style.display="none";
+
+        cargarProductos();
+    });
+}
+
+/* CARGAR PRODUCTOS */
+function cargarProductos(){
+
+fetch("https://tienda-crochet-dtlk.onrender.com/productos")
+.then(res=>res.json())
+.then(data=>{
+
+    const contenedor = document.getElementById("lista");
+    contenedor.innerHTML = "";
+
+    data.forEach(p => {
+
+        contenedor.innerHTML += `
+        <div class="card">
+            <img src="https://tienda-crochet-dtlk.onrender.com/uploads/${p.imagen}">
+            <h4>${p.nombre}</h4>
+            <p>$${p.precio}</p>
+            <p>Stock: ${p.cantidad}</p>
+
+            <div class="actions">
+                <button class="edit" onclick="editar(${p.id})">Editar</button>
+                <button class="delete" onclick="eliminar(${p.id})">Eliminar</button>
+            </div>
+        </div>
+        `;
+    });
+
+});
+}
+
+/* ELIMINAR */
+function eliminar(id){
+    if(confirm("¿Eliminar producto?")){
+        fetch(`https://tienda-crochet-dtlk.onrender.com/productos/${id}`,{
+            method:"DELETE"
+        })
+        .then(()=>cargarProductos());
+    }
+}
+
+/* EDITAR */
+function editar(id){
+    const nuevoNombre = prompt("Nuevo nombre:");
+    const nuevoPrecio = prompt("Nuevo precio:");
+    const nuevaCantidad = prompt("Cantidad:");
+
+    fetch(`https://tienda-crochet-dtlk.onrender.com/productos/${id}`,{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            nombre:nuevoNombre,
+            precio:nuevoPrecio,
+            cantidad:nuevaCantidad
+        })
+    })
+    .then(()=>cargarProductos());
+}
+
+/* INICIAR */
+cargarProductos();
+
+</script>
+
+</body>
+</html>

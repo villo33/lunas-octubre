@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunas de Octubre</title>
+
+<style>
+html{scroll-behavior:smooth;}
+
+body{
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+    color:white;
+}
+
+/* NAVBAR */
+.navbar{
+    position:sticky;
+    top:0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    padding:15px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    z-index:100;
+}
+
+.logo{
+    font-weight:bold;
+    font-size:20px;
+    color:#ffd700;
+}
+
+/* HERO */
+header{
+    text-align:center;
+    padding:60px 20px;
+}
+
+header h1{
+    font-size:32px;
+    margin-bottom:10px;
+}
+
+header p{
+    color:#ccc;
+}
+
+/* BUSCADOR */
+.search input{
+    width:300px;
+    padding:12px;
+    border:none;
+    border-radius:30px;
+    margin-top:15px;
+    outline:none;
+}
+
+/* GRID */
+.container{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+    gap:30px;
+    padding:30px;
+}
+
+/* CARD */
+.card{
+    background: rgba(255,255,255,0.05);
+    border-radius:20px;
+    overflow:hidden;
+    backdrop-filter: blur(10px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.4);
+    transition:0.4s;
+}
+
+.card:hover{
+    transform: translateY(-10px);
+}
+
+/* IMG */
+.img-container{
+    height:250px;
+    overflow:hidden;
+}
+
+.img-container img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:0.5s;
+    cursor:pointer;
+}
+
+.card:hover img{
+    transform:scale(1.1);
+}
+
+/* CONTENIDO */
+.card-content{
+    padding:20px;
+}
+
+.card-content h3{
+    margin:0 0 10px;
+}
+
+/* PRECIO */
+.price{
+    color:#ffd700;
+    font-weight:bold;
+    font-size:18px;
+}
+
+/* INFO */
+.info{
+    font-size:13px;
+    color:#bbb;
+    margin-top:5px;
+}
+
+/* BOTÓN */
+.btn{
+    display:block;
+    text-align:center;
+    background: linear-gradient(135deg,#25D366,#128C7E);
+    color:white;
+    padding:12px;
+    border-radius:12px;
+    text-decoration:none;
+    margin-top:10px;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.btn:hover{
+    transform:scale(1.05);
+}
+
+/* MODAL */
+.modal{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+
+.modal img{
+    max-width:90%;
+    max-height:90%;
+    border-radius:10px;
+}
+
+/* WHATSAPP FLOAT */
+.whatsapp{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background: linear-gradient(135deg,#25D366,#128C7E);
+    color:white;
+    padding:15px;
+    border-radius:50%;
+    font-size:20px;
+    text-decoration:none;
+    box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* LOADER */
+.loader{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:#0f0c29;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+    font-size:20px;
+}
+
+.hidden{display:none;}
+</style>
+</head>
+
+<body>
+
+<div class="loader" id="loader">🌙 Cargando Lunas de Octubre...</div>
+
+<div class="navbar">
+<div class="logo">🌙 Lunas de Octubre</div>
+</div>
+
+<header>
+<h1>Tejidos únicos hechos con amor 🧶✨</h1>
+<p>Diseños exclusivos que iluminan tu estilo</p>
+
+<div class="search">
+<input type="text" id="buscador" placeholder="Buscar productos...">
+</div>
+</header>
+
+<div class="container" id="productos"></div>
+
+<div class="modal" id="modal" onclick="cerrarModal()">
+<img id="imgModal">
+</div>
+
+<a class="whatsapp" href="https://wa.me/573137414274?text=Hola quiero información" target="_blank">💬</a>
+
+<script>
+
+let productosGlobal=[];
+
+fetch("https://tienda-crochet-dtlk.onrender.com/productos")
+.then(res=>res.json())
+.then(data=>{
+    productosGlobal=data;
+    mostrar(data);
+    document.getElementById("loader").classList.add("hidden");
+});
+
+function mostrar(data){
+    const contenedor=document.getElementById("productos");
+    contenedor.innerHTML="";
+
+    if(data.length===0){
+        contenedor.innerHTML="<h2 style='text-align:center'>No hay productos disponibles</h2>";
+        return;
+    }
+
+    data.forEach(p=>{
+        contenedor.innerHTML+=`
+        <div class="card">
+            <div class="img-container">
+                <img src="https://tienda-crochet-dtlk.onrender.com/uploads/${p.imagen}" onclick="verImagen('${p.imagen}')">
+            </div>
+
+            <div class="card-content">
+                <h3>${p.nombre}</h3>
+                <div class="price">$${p.precio}</div>
+
+                <div class="info">
+                ${
+                    p.cantidad > 0 
+                    ? `📦 ${p.cantidad} disponibles`
+                    : `❌ Agotado`
+                }
+                </div>
+
+                <a class="btn" 
+                href="https://wa.me/573146679536?text=Hola quiero el producto: ${p.nombre} con precio $${p.precio}" 
+                target="_blank">
+                    Comprar por WhatsApp
+                </a>
+
+            </div>
+        </div>`;
+    });
+}
+
+/* BUSCADOR */
+buscador.addEventListener("input",()=>{
+    const v=buscador.value.toLowerCase();
+    mostrar(productosGlobal.filter(p=>p.nombre.toLowerCase().includes(v)));
+});
+
+/* MODAL */
+function verImagen(img){
+    modal.style.display="flex";
+    imgModal.src="https://tienda-crochet-dtlk.onrender.com/uploads/"+img;
+}
+
+function cerrarModal(){
+    modal.style.display="none";
+}
+
+</script>
+
+</body>
+</html>

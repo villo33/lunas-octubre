@@ -1,0 +1,19 @@
+{{
+  "name": "lunas-octubre",
+  "version": "1.0.0",
+  "description": "API tienda Lunas de Octubre",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["lunas", "tienda", "crochet", "api"],
+  "author": "Lunas de Octubre",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "mysql2": "^3.22.0"
+  }
+}
