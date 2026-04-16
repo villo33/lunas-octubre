@@ -1,9 +1,10 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { v2: cloudinary } = require("cloudinary");
 
 const app = express();
 
@@ -11,41 +12,27 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
 
-/* ================== RUTA BASE (OPCIONAL PRO) ================== */
-// Esto ayuda a identificar tu API como "lunas de octubre"
 const API = "/api";
 
-/* ================== ASEGURAR CARPETA UPLOADS ================== */
+/* ================== CLOUDINARY ================== */
 
-const uploadPath = path.join(__dirname, "public/uploads");
-
-if (!fs.existsSync(uploadPath)) {
-    fs.mkdirSync(uploadPath, { recursive: true });
-}
-
-/* ================== CONFIGURAR MULTER ================== */
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        cb(null, "lunas-" + Date.now() + path.extname(file.originalname));
-    }
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUD_API_KEY,
+    api_secret: process.env.CLOUD_API_SECRET
 });
 
-const upload = multer({ storage });
+/* ================== MULTER (MEMORIA) ================== */
 
-/* HACER PÚBLICA LA CARPETA */
-app.use("/uploads", express.static(uploadPath));
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 /* ================== PRODUCTOS ================== */
 
 /* LISTAR */
 app.get(`${API}/productos`, (req, res) => {
-    db.query("SELECT * FROM productos ORDER BY id DESC", (err, data) => {
+    db.query("SELECT * FROM productos_lunas ORDER BY id DESC", (err, data) => {
         if (err) {
             console.log(err);
             return res.status(500).json({ error: "Error en BD" });
@@ -54,8 +41,8 @@ app.get(`${API}/productos`, (req, res) => {
     });
 });
 
-/* GUARDAR */
-app.post(`${API}/productos`, upload.single("imagen"), (req, res) => {
+/* GUARDAR (SUBE A CLOUDINARY) */
+app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
     try {
         const { nombre, precio, cantidad } = req.body;
 
@@ -63,19 +50,33 @@ app.post(`${API}/productos`, upload.single("imagen"), (req, res) => {
             return res.status(400).json({ error: "Imagen requerida" });
         }
 
-        const imagen = req.file.filename;
-
-        db.query(
-            "INSERT INTO productos (nombre, precio, imagen, cantidad) VALUES (?,?,?,?)",
-            [nombre, precio, imagen, cantidad],
-            (err) => {
-                if (err) {
-                    console.log(err);
-                    return res.status(500).json({ error: "Error al guardar" });
+        /* SUBIR A CLOUDINARY */
+        const resultado = await cloudinary.uploader.upload_stream(
+            { folder: "lunas_octubre" },
+            (error, result) => {
+                if (error) {
+                    console.log(error);
+                    return res.status(500).json({ error: "Error subiendo imagen" });
                 }
-                res.json({ mensaje: "Producto guardado" });
+
+                const imagen = result.secure_url;
+
+                db.query(
+                    "INSERT INTO productos_lunas (nombre, precio, imagen, cantidad) VALUES (?,?,?,?)",
+                    [nombre, precio, imagen, cantidad],
+                    (err) => {
+                        if (err) {
+                            console.log(err);
+                            return res.status(500).json({ error: "Error al guardar" });
+                        }
+                        res.json({ mensaje: "Producto guardado" });
+                    }
+                );
             }
         );
+
+        resultado.end(req.file.buffer);
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: "Error servidor" });
@@ -86,19 +87,12 @@ app.post(`${API}/productos`, upload.single("imagen"), (req, res) => {
 app.delete(`${API}/productos/:id`, (req, res) => {
     const { id } = req.params;
 
-    db.query("SELECT imagen FROM productos WHERE id=?", [id], (err, data) => {
-        if (data && data.length > 0) {
-            const ruta = path.join(uploadPath, data[0].imagen);
-            if (fs.existsSync(ruta)) fs.unlinkSync(ruta);
+    db.query("DELETE FROM productos_lunas WHERE id=?", [id], (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ error: "Error al eliminar" });
         }
-
-        db.query("DELETE FROM productos WHERE id=?", [id], (err) => {
-            if (err) {
-                console.log(err);
-                return res.status(500).json({ error: "Error al eliminar" });
-            }
-            res.json({ mensaje: "Producto eliminado" });
-        });
+        res.json({ mensaje: "Producto eliminado" });
     });
 });
 
@@ -108,7 +102,7 @@ app.put(`${API}/productos/:id`, (req, res) => {
     const { nombre, precio, cantidad } = req.body;
 
     db.query(
-        "UPDATE productos SET nombre=?, precio=?, cantidad=? WHERE id=?",
+        "UPDATE productos_lunas SET nombre=?, precio=?, cantidad=? WHERE id=?",
         [nombre, precio, cantidad, id],
         (err) => {
             if (err) {
@@ -120,10 +114,10 @@ app.put(`${API}/productos/:id`, (req, res) => {
     );
 });
 
-/* ================== RUTA DE PRUEBA ================== */
+/* ================== TEST ================== */
 
 app.get("/", (req, res) => {
-    res.send("🌙 API Lunas de Octubre funcionando");
+    res.send("🌙 API Lunas de Octubre con Cloudinary funcionando");
 });
 
 /* ================== SERVIDOR ================== */
@@ -131,5 +125,5 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-    console.log("🌙 Lunas de Octubre corriendo en puerto " + PORT);
+    console.log("🌙 Servidor Lunas de Octubre en puerto " + PORT);
 });
