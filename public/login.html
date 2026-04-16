@@ -90,7 +90,7 @@ function login(){
     const pass = document.getElementById("password").value;
 
     if(user === "Yuris" && pass === "lunas1326"){
-        localStorage.setItem("admin_lunas","ok");
+        localStorage.setItem("login","ok"); // 🔥 CLAVE
         window.location.href = "admin.html";
     }else{
         document.getElementById("error").innerText = "❌ Usuario o contraseña incorrectos";

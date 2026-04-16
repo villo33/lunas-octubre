@@ -126,12 +126,12 @@ button{
 <script>
 
 /* LOGIN */
-if(localStorage.getItem("Yuris") !== "lunas1326"){
+if(!localStorage.getItem("login")){
     window.location.href="login.html";
 }
 
 function logout(){
-    localStorage.removeItem("Yuris");
+    localStorage.removeItem("login");
     window.location.href="login.html";
 }
 
