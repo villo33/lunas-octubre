@@ -12,6 +12,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
 const API = "/api";
 
@@ -141,7 +142,7 @@ app.put(`${API}/productos/:id`, (req, res) => {
 /* ================== RUTA BASE ================== */
 
 app.get("/", (req, res) => {
-    res.send("🌙 API Lunas de Octubre con Cloudinary funcionando 🚀");
+    res.sendFile(__dirname + "/public/index.html");
 });
 
 /* ================== MANEJO GLOBAL DE ERRORES ================== */
