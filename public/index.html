@@ -15,12 +15,28 @@ body{
     color:white;
 }
 
+/* LOADER */
+.loader{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:#0f0c29;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+    font-size:18px;
+    color:#ffd700;
+}
+
+.hidden{display:none;}
+
 /* NAVBAR */
 .navbar{
     position:sticky;
     top:0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(10px);
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
     padding:15px 25px;
     display:flex;
     justify-content:space-between;
@@ -37,12 +53,14 @@ body{
 /* HERO */
 header{
     text-align:center;
-    padding:60px 20px;
+    padding:60px 20px 30px;
 }
 
 header h1{
-    font-size:32px;
+    font-size:34px;
     margin-bottom:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
 }
 
 header p{
@@ -51,39 +69,39 @@ header p{
 
 /* BUSCADOR */
 .search input{
-    width:300px;
-    padding:12px;
+    width:320px;
+    padding:12px 18px;
     border:none;
     border-radius:30px;
     margin-top:15px;
     outline:none;
+    font-size:14px;
 }
 
 /* GRID */
 .container{
     display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
-    gap:30px;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap:25px;
     padding:30px;
 }
 
 /* CARD */
 .card{
-    background: rgba(255,255,255,0.05);
-    border-radius:20px;
+    background: rgba(255,255,255,0.06);
+    border-radius:18px;
     overflow:hidden;
-    backdrop-filter: blur(10px);
     box-shadow:0 10px 25px rgba(0,0,0,0.4);
-    transition:0.4s;
+    transition:0.3s;
 }
 
 .card:hover{
-    transform: translateY(-10px);
+    transform: translateY(-6px);
 }
 
 /* IMG */
 .img-container{
-    height:250px;
+    height:240px;
     overflow:hidden;
 }
 
@@ -96,37 +114,50 @@ header p{
 }
 
 .card:hover img{
-    transform:scale(1.1);
+    transform:scale(1.08);
 }
 
 /* CONTENIDO */
 .card-content{
-    padding:20px;
+    padding:18px;
+}
+
+.card-content h3{
+    margin:5px 0;
+    font-size:17px;
 }
 
 .price{
     color:#ffd700;
     font-weight:bold;
-    font-size:18px;
+    font-size:19px;
+    margin-top:5px;
 }
 
 .info{
     font-size:13px;
     color:#bbb;
-    margin-top:5px;
+    margin-top:6px;
 }
 
-/* BOTÓN */
+/* BOTÓN WHATSAPP (MEJORADO) */
 .btn{
     display:block;
     text-align:center;
     background: linear-gradient(135deg,#25D366,#128C7E);
     color:white;
-    padding:12px;
+    padding:11px;
     border-radius:12px;
     text-decoration:none;
-    margin-top:10px;
+    margin-top:12px;
     font-weight:bold;
+    font-size:14px;
+    transition:0.3s;
+}
+
+.btn:hover{
+    transform:scale(1.03);
+    opacity:0.95;
 }
 
 /* MODAL */
@@ -136,10 +167,11 @@ header p{
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.9);
+    background:rgba(0,0,0,0.92);
     display:none;
     justify-content:center;
     align-items:center;
+    z-index:999;
 }
 
 .modal img{
@@ -148,31 +180,10 @@ header p{
     border-radius:10px;
 }
 
-/* WHATSAPP */
-.whatsapp{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    background: linear-gradient(135deg,#25D366,#128C7E);
-    color:white;
-    padding:15px;
-    border-radius:50%;
-    font-size:20px;
+/* RESPONSIVE */
+@media(max-width:600px){
+    .search input{width:90%;}
 }
-
-/* LOADER */
-.loader{
-    position:fixed;
-    width:100%;
-    height:100%;
-    background:#0f0c29;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:999;
-}
-
-.hidden{display:none;}
 </style>
 </head>
 
@@ -185,8 +196,8 @@ header p{
 </div>
 
 <header>
-<h1>productos exclusivos y buena calidad</h1>
-<p>Diseños exclusivos que iluminan tu estilo</p>
+<h1>Productos exclusivos</h1>
+<p>Diseños únicos que iluminan tu estilo</p>
 
 <div class="search">
 <input type="text" id="buscador" placeholder="Buscar productos...">
@@ -199,13 +210,11 @@ header p{
 <img id="imgModal">
 </div>
 
-<a class="whatsapp" href="https://wa.me/573137414274?text=Hola quiero información" target="_blank">💬</a>
-
 <script>
 
 let productosGlobal=[];
 
-/* 🔥 NUEVO BACKEND */
+/* CARGAR PRODUCTOS */
 fetch("https://lunas-octubre.onrender.com/api/productos")
 .then(res=>res.json())
 .then(data=>{
@@ -243,12 +252,11 @@ function mostrar(data){
                 }
                 </div>
 
-                <a class="btn" 
-                href="https://wa.me/573137414274?text=Hola quiero el producto: ${p.nombre} con precio $${p.precio}" 
+                <a class="btn"
+                href="https://wa.me/573137414274?text=Hola quiero el producto: ${p.nombre} por $${p.precio}"
                 target="_blank">
                     Comprar por WhatsApp
                 </a>
-
             </div>
         </div>`;
     });

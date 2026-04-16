@@ -16,77 +16,125 @@ body{
 /* HEADER */
 header{
     background: linear-gradient(135deg,#1f1c2c,#928dab);
-    padding:25px;
+    padding:22px;
     text-align:center;
-    font-size:26px;
+    font-size:24px;
+    font-weight:bold;
+    letter-spacing:1px;
 }
 
-/* LOGOUT */
+/* LOGOUT (MEJORADO) */
 .logout-btn{
-    padding:10px 20px;
+    padding:8px 16px;
     background: linear-gradient(135deg,#ff416c,#ff4b2b);
     border:none;
-    border-radius:12px;
+    border-radius:10px;
     cursor:pointer;
     display:block;
-    margin:15px auto;
+    margin:12px auto;
+    font-size:13px;
+    font-weight:bold;
+    width:160px;
+    transition:0.3s;
+}
+
+.logout-btn:hover{
+    transform:scale(1.05);
+    opacity:0.9;
 }
 
 /* FORM */
 .container{
-    max-width:500px;
+    max-width:520px;
     margin:20px auto;
     background: rgba(255,255,255,0.05);
-    padding:25px;
-    border-radius:20px;
+    padding:22px;
+    border-radius:18px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.3);
 }
 
 input{
     width:100%;
-    padding:12px;
-    margin:10px 0;
-    border-radius:12px;
+    padding:11px;
+    margin:8px 0;
+    border-radius:10px;
     border:none;
     background: rgba(255,255,255,0.1);
     color:white;
+    outline:none;
 }
 
 button{
     width:100%;
-    padding:12px;
+    padding:11px;
     border:none;
-    border-radius:12px;
+    border-radius:10px;
     background: linear-gradient(135deg,#ffd200,#f7971e);
     cursor:pointer;
     font-weight:bold;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.02);
 }
 
 /* LISTA */
 .lista{
-    max-width:1000px;
+    max-width:1100px;
     margin:30px auto;
     display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
-    gap:20px;
+    grid-template-columns: repeat(auto-fit,minmax(230px,1fr));
+    gap:18px;
+    padding:0 15px;
 }
 
+/* CARD MEJORADA */
 .card{
-    background: rgba(255,255,255,0.05);
-    padding:15px;
+    background: rgba(255,255,255,0.06);
+    padding:14px;
     border-radius:15px;
+    box-shadow:0 8px 18px rgba(0,0,0,0.3);
+    transition:0.3s;
 }
 
+.card:hover{
+    transform:translateY(-5px);
+}
+
+/* IMAGEN BALANCEADA (CLAVE) */
 .card img{
     width:100%;
-    height:180px;
+    height:170px;
     object-fit:cover;
-    border-radius:10px;
+    border-radius:12px;
+    margin-bottom:10px;
 }
 
+/* TEXTO */
+.card h4{
+    margin:5px 0;
+    font-size:16px;
+}
+
+.card p{
+    margin:3px 0;
+    font-size:14px;
+    opacity:0.9;
+}
+
+/* BOTONES */
 .actions{
     display:flex;
-    gap:10px;
+    gap:8px;
     margin-top:10px;
+}
+
+.actions button{
+    flex:1;
+    padding:8px;
+    font-size:13px;
+    border-radius:8px;
 }
 
 .edit{background:#007bff;color:white;}
@@ -114,7 +162,7 @@ button{
 <input id="cantidad" placeholder="Cantidad">
 
 <input type="file" id="imagen">
-<img id="preview">
+<img id="preview" style="width:100%;margin-top:10px;border-radius:10px;display:none;">
 
 <button onclick="guardar()">Guardar</button>
 <div id="msg" class="mensaje"></div>
@@ -148,7 +196,7 @@ imagen.onchange = ()=>{
     reader.readAsDataURL(file);
 }
 
-/* 🔥 GUARDAR (NUEVO BACKEND) */
+/* GUARDAR */
 function guardar(){
 
     if(!nombre.value || !precio.value || !cantidad.value){
@@ -190,13 +238,12 @@ function guardar(){
 
         cargarProductos();
     })
-    .catch(err=>{
-        console.log(err);
+    .catch(()=>{
         msg.innerText="❌ Error al guardar";
     });
 }
 
-/* 🔥 CARGAR PRODUCTOS */
+/* CARGAR */
 function cargarProductos(){
 
 fetch("https://lunas-octubre.onrender.com/api/productos")
@@ -212,8 +259,8 @@ fetch("https://lunas-octubre.onrender.com/api/productos")
         <div class="card">
             <img src="${p.imagen}">
             <h4>${p.nombre}</h4>
-            <p>$${p.precio}</p>
-            <p>Stock: ${p.cantidad}</p>
+            <p>💰 $${p.precio}</p>
+            <p>📦 Stock: ${p.cantidad}</p>
 
             <div class="actions">
                 <button class="edit" onclick="editar(${p.id})">Editar</button>
@@ -226,7 +273,7 @@ fetch("https://lunas-octubre.onrender.com/api/productos")
 });
 }
 
-/* 🔥 ELIMINAR */
+/* ELIMINAR */
 function eliminar(id){
     if(confirm("¿Eliminar producto?")){
         fetch(`https://lunas-octubre.onrender.com/api/productos/${id}`,{
@@ -236,7 +283,7 @@ function eliminar(id){
     }
 }
 
-/* 🔥 EDITAR */
+/* EDITAR */
 function editar(id){
     const nombreNuevo = prompt("Nombre:");
     const precioNuevo = prompt("Precio:");
@@ -254,7 +301,7 @@ function editar(id){
     .then(()=>cargarProductos());
 }
 
-/* INICIAR */
+/* INICIO */
 cargarProductos();
 
 </script>
