@@ -53,14 +53,16 @@ function subirImagen(buffer) {
 /* ================== PRODUCTOS ================== */
 
 /* LISTAR */
-app.get(`${API}/productos`, (req, res) => {
-    db.query("SELECT * FROM productos_lunas ORDER BY id DESC", (err, data) => {
-        if (err) {
-            console.log("❌ Error BD:", err);
-            return res.status(500).json({ error: "Error en BD" });
-        }
-        res.json(data);
-    });
+app.get(`${API}/productos`, async (req, res) => {
+    try {
+        const result = await db.query(
+            "SELECT * FROM productos_lunas ORDER BY id DESC"
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.log("❌ Error BD:", err);
+        res.status(500).json({ error: "Error en BD" });
+    }
 });
 
 /* GUARDAR */
@@ -72,29 +74,17 @@ app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
             return res.status(400).json({ error: "Datos incompletos" });
         }
 
-        const result = await subirImagen(req.file.buffer);
+        const resultImg = await subirImagen(req.file.buffer);
+        const imagen = resultImg.secure_url;
 
-        const imagen = result.secure_url;
-
-        db.query(
-            "INSERT INTO productos_lunas (nombre, precio, imagen, cantidad) VALUES (?,?,?,?)",
-            [nombre, precio, imagen, cantidad],
-            (err, response) => {
-                if (err) {
-                    console.log("❌ Error insert:", err);
-                    return res.status(500).json({ error: "Error al guardar" });
-                }
-
-                // 🔥 DEVOLVER PRODUCTO NUEVO
-                res.json({
-                    id: response.insertId,
-                    nombre,
-                    precio,
-                    cantidad,
-                    imagen
-                });
-            }
+        const result = await db.query(
+            `INSERT INTO productos_lunas (nombre, precio, imagen, cantidad)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [nombre, precio, imagen, cantidad]
         );
+
+        res.json(result.rows[0]);
 
     } catch (error) {
         console.log("❌ Error servidor:", error);
@@ -103,38 +93,46 @@ app.post(`${API}/productos`, upload.single("imagen"), async (req, res) => {
 });
 
 /* ELIMINAR */
-app.delete(`${API}/productos/:id`, (req, res) => {
-    const { id } = req.params;
+app.delete(`${API}/productos/:id`, async (req, res) => {
+    try {
+        const { id } = req.params;
 
-    db.query("DELETE FROM productos_lunas WHERE id=?", [id], (err) => {
-        if (err) {
-            console.log("❌ Error delete:", err);
-            return res.status(500).json({ error: "Error al eliminar" });
-        }
+        await db.query(
+            "DELETE FROM productos_lunas WHERE id = $1",
+            [id]
+        );
+
         res.json({ mensaje: "Producto eliminado" });
-    });
+
+    } catch (err) {
+        console.log("❌ Error delete:", err);
+        res.status(500).json({ error: "Error al eliminar" });
+    }
 });
 
 /* EDITAR */
-app.put(`${API}/productos/:id`, (req, res) => {
-    const { id } = req.params;
-    const { nombre, precio, cantidad } = req.body;
+app.put(`${API}/productos/:id`, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, precio, cantidad } = req.body;
 
-    if (!nombre || !precio || !cantidad) {
-        return res.status(400).json({ error: "Datos incompletos" });
-    }
-
-    db.query(
-        "UPDATE productos_lunas SET nombre=?, precio=?, cantidad=? WHERE id=?",
-        [nombre, precio, cantidad, id],
-        (err) => {
-            if (err) {
-                console.log("❌ Error update:", err);
-                return res.status(500).json({ error: "Error al actualizar" });
-            }
-            res.json({ mensaje: "Producto actualizado" });
+        if (!nombre || !precio || !cantidad) {
+            return res.status(400).json({ error: "Datos incompletos" });
         }
-    );
+
+        await db.query(
+            `UPDATE productos_lunas 
+             SET nombre = $1, precio = $2, cantidad = $3 
+             WHERE id = $4`,
+            [nombre, precio, cantidad, id]
+        );
+
+        res.json({ mensaje: "Producto actualizado" });
+
+    } catch (err) {
+        console.log("❌ Error update:", err);
+        res.status(500).json({ error: "Error al actualizar" });
+    }
 });
 
 /* ================== RUTAS HTML ================== */

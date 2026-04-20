@@ -1,35 +1,20 @@
-const mysql = require("mysql2");
+const { Pool } = require("pg");
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
+const db = new Pool({
+    connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false
     }
 });
 
-/* CONEXIÓN */
-db.connect(err => {
-    if(err){
+/* PROBAR CONEXIÓN */
+db.connect()
+    .then(client => {
+        console.log("🌙 Conectado a Supabase (PostgreSQL)");
+        client.release(); // importante liberar conexión
+    })
+    .catch((err) => {
         console.log("❌ Error conexión BD:", err);
-    }else{
-        console.log("🌙 Base de datos Lunas de Octubre conectada");
-    }
-});
-
-/* EVITAR CAÍDAS (PRO) */
-db.on("error", err => {
-    console.log("⚠️ Error BD:", err);
-
-    if(err.code === "PROTOCOL_CONNECTION_LOST"){
-        console.log("🔄 Reconectando base de datos...");
-        db.connect();
-    }else{
-        throw err;
-    }
-});
+    });
 
 module.exports = db;
