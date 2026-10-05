@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f0c29"
+    >
+
+    <title>Lunas de Octubre | Productos</title>
+
+    <link
+        rel="stylesheet"
+        href="/productos.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- =========================================================
+         BARRA SUPERIOR
+         ========================================================= -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                ☾
+            </div>
+
+            <div class="brand-text">
+
+                <h1>
+                    Lunas de Octubre
+                </h1>
+
+                <span>
+                    Gestión de productos
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <a
+                href="/admin.html"
+                class="back-link"
+            >
+                ← Panel
+            </a>
+
+            <button
+                type="button"
+                id="logoutBtn"
+                class="logout-btn"
+            >
+                Cerrar sesión
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================================
+         CONTENIDO PRINCIPAL
+         ========================================================= -->
+
+    <main class="page-container">
+
+
+        <!-- =====================================================
+             ENCABEZADO
+             ===================================================== -->
+
+        <section class="page-header">
+
+            <div>
+
+                <span class="eyebrow">
+                    INVENTARIO
+                </span>
+
+                <h2>
+                    Productos
+                </h2>
+
+                <p>
+                    Administra productos, precios, stock,
+                    categorías y proveedores.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="nuevoProductoBtn"
+                class="primary-btn"
+            >
+                + Nuevo producto
+            </button>
+
+        </section>
+
+
+        <!-- =====================================================
+             ESTADÍSTICAS
+             ===================================================== -->
+
+        <section class="stats-grid">
+
+
+            <article class="stat-card">
+
+                <div class="stat-icon">
+                    P
+                </div>
+
+                <div>
+
+                    <span>
+                        Total productos
+                    </span>
+
+                    <strong id="totalProductos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+                <div class="stat-icon warning">
+                    !
+                </div>
+
+                <div>
+
+                    <span>
+                        Stock bajo
+                    </span>
+
+                    <strong id="productosStockBajo">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+                <div class="stat-icon success">
+                    ✓
+                </div>
+
+                <div>
+
+                    <span>
+                        Productos activos
+                    </span>
+
+                    <strong id="productosActivos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+                <div class="stat-icon money">
+                    $
+                </div>
+
+                <div>
+
+                    <span>
+                        Valor inventario
+                    </span>
+
+                    <strong id="valorInventario">
+                        $0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+        </section>
+
+
+        <!-- =====================================================
+             FILTROS
+             ===================================================== -->
+
+        <section class="filters-card">
+
+
+            <div class="filter-search">
+
+                <label for="buscarProducto">
+                    Buscar producto
+                </label>
+
+                <div class="search-input-wrapper">
+
+                    <span class="search-icon">
+                        ⌕
+                    </span>
+
+                    <input
+                        type="search"
+                        id="buscarProducto"
+                        placeholder="Nombre, código o categoría..."
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="filter-field">
+
+                <label for="filtroCategoria">
+                    Categoría
+                </label>
+
+                <select id="filtroCategoria">
+
+                    <option value="">
+                        Todas las categorías
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-field">
+
+                <label for="filtroEstado">
+                    Estado
+                </label>
+
+                <select id="filtroEstado">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    <option value="activo">
+                        Activos
+                    </option>
+
+                    <option value="inactivo">
+                        Inactivos
+                    </option>
+
+                    <option value="stock_bajo">
+                        Stock bajo
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="recargarBtn"
+                class="secondary-btn"
+            >
+                ↻ Recargar
+            </button>
+
+
+        </section>
+
+
+        <!-- =====================================================
+             MENSAJE
+             ===================================================== -->
+
+        <div
+            id="mensaje"
+            class="mensaje hidden"
+        ></div>
+
+
+        <!-- =====================================================
+             TABLA
+             ===================================================== -->
+
+        <section class="table-card">
+
+
+            <div class="table-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        CATÁLOGO
+                    </span>
+
+                    <h3>
+                        Productos registrados
+                    </h3>
+
+                    <span id="contadorResultados">
+                        0 productos
+                    </span>
+
+                </div>
+
+
+                <!-- ID CORREGIDO -->
+                <button
+                    type="button"
+                    id="nuevoProductoTablaBtn"
+                    class="secondary-btn table-add-btn"
+                >
+                    + Agregar producto
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 CARGANDO
+                 ================================================= -->
+
+            <div
+                id="cargando"
+                class="loading hidden"
+            >
+
+                <div class="loading-spinner"></div>
+
+                <span>
+                    Cargando productos...
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 TABLA
+                 ================================================= -->
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Producto
+                            </th>
+
+                            <th>
+                                Código
+                            </th>
+
+                            <th>
+                                Categoría
+                            </th>
+
+                            <th>
+                                Compra
+                            </th>
+
+                            <th>
+                                Venta
+                            </th>
+
+                            <th>
+                                Ganancia
+                            </th>
+
+                            <th>
+                                Stock
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                            <th>
+                                Acciones
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="productosTabla"></tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- =================================================
+                 ESTADO VACÍO
+                 ================================================= -->
+
+            <div
+                id="estadoVacio"
+                class="empty-state hidden"
+            >
+
+                <div class="empty-icon">
+                    ☾
+                </div>
+
+                <h3>
+                    No hay productos
+                </h3>
+
+                <p>
+                    Comienza agregando tu primer producto
+                    al inventario.
+                </p>
+
+                <button
+                    type="button"
+                    id="nuevoProductoVacioBtn"
+                    class="primary-btn"
+                >
+                    + Crear producto
+                </button>
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+    <!-- =========================================================
+         MODAL PRODUCTO
+         ========================================================= -->
+
+    <div
+        id="productoModal"
+        class="modal hidden"
+    >
+
+        <div class="modal-content">
+
+
+            <!-- =================================================
+                 CABECERA DEL MODAL
+                 ================================================= -->
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        INVENTARIO
+                    </span>
+
+                    <h2 id="modalTitulo">
+                        Nuevo producto
+                    </h2>
+
+                    <p>
+                        Registra toda la información
+                        del producto.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="cerrarModalBtn"
+                    class="close-btn"
+                    aria-label="Cerrar"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 FORMULARIO
+                 ================================================= -->
+
+            <form
+                id="productoForm"
+                enctype="multipart/form-data"
+            >
+
+
+                <!-- =================================================
+                     INFORMACIÓN GENERAL
+                     ================================================= -->
+
+                <section class="form-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-number">
+                            01
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Información general
+                            </h3>
+
+                            <p>
+                                Datos básicos del producto.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label for="codigo">
+                                Código *
+                            </label>
+
+                            <input
+                                type="text"
+                                id="codigo"
+                                name="codigo"
+                                placeholder="Ej: LUNA-001"
+                                autocomplete="off"
+                                required
+                            >
+
+                            <small>
+                                Código único del producto.
+                            </small>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="nombre">
+                                Nombre *
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nombre"
+                                name="nombre"
+                                placeholder="Ej: Perfume floral"
+                                autocomplete="off"
+                                required
+                            >
+
+                            <small>
+                                Nombre con el que aparecerá.
+                            </small>
+
+                        </div>
+
+
+                        <div class="form-group full">
+
+                            <label for="descripcion">
+                                Descripción
+                            </label>
+
+                            <textarea
+                                id="descripcion"
+                                name="descripcion"
+                                rows="3"
+                                placeholder="Describe las características del producto..."
+                            ></textarea>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="categoria">
+                                Categoría
+                            </label>
+
+                            <select
+                                id="categoria"
+                                name="categoria_id"
+                            >
+
+                                <option value="">
+                                    Seleccionar categoría
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="proveedor">
+                                Proveedor
+                            </label>
+
+                            <select
+                                id="proveedor"
+                                name="proveedor_id"
+                            >
+
+                                <option value="">
+                                    Seleccionar proveedor
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     PRECIOS Y STOCK
+                     ================================================= -->
+
+                <section class="form-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-number">
+                            02
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Precios y stock
+                            </h3>
+
+                            <p>
+                                Controla costos, precios y existencias.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label for="precioCompra">
+                                Precio de compra *
+                            </label>
+
+                            <div class="money-input">
+
+                                <span>
+                                    $
+                                </span>
+
+                                <input
+                                    type="number"
+                                    id="precioCompra"
+                                    name="precio_compra"
+                                    min="0"
+                                    step="1"
+                                    value="0"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="precioVenta">
+                                Precio de venta *
+                            </label>
+
+                            <div class="money-input">
+
+                                <span>
+                                    $
+                                </span>
+
+                                <input
+                                    type="number"
+                                    id="precioVenta"
+                                    name="precio_venta"
+                                    min="1"
+                                    step="1"
+                                    value="0"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="cantidad">
+                                Cantidad *
+                            </label>
+
+                            <input
+                                type="number"
+                                id="cantidad"
+                                name="cantidad"
+                                min="0"
+                                step="1"
+                                value="0"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="stockMinimo">
+                                Stock mínimo
+                            </label>
+
+                            <input
+                                type="number"
+                                id="stockMinimo"
+                                name="stock_minimo"
+                                min="0"
+                                step="1"
+                                value="0"
+                            >
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         GANANCIA
+                         ================================================= -->
+
+                    <div class="profit-preview">
+
+
+                        <div class="profit-item">
+
+                            <span>
+                                Ganancia por unidad
+                            </span>
+
+                            <strong id="gananciaPreview">
+                                $0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="profit-divider"></div>
+
+
+                        <div class="profit-item">
+
+                            <span>
+                                Margen de ganancia
+                            </span>
+
+                            <strong id="margenPreview">
+                                0%
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+                <!-- =================================================
+                     IMAGEN
+                     ================================================= -->
+
+                <section class="form-section image-section">
+
+
+                    <div class="section-heading">
+
+                        <div class="section-number">
+                            03
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Imagen del producto
+                            </h3>
+
+                            <p>
+                                Agrega una fotografía clara
+                                del producto.
+                            </p>
+
+                        </div>
+
+
+                        <div class="image-security-badge">
+                            Cloudinary
+                        </div>
+
+                    </div>
+
+
+                    <!-- =================================================
+                         CONTENEDOR DE IMAGEN
+                         ================================================= -->
+
+                    <div
+                        class="image-upload"
+                        id="imageUploadArea"
+                    >
+
+
+                        <!-- =================================================
+                             RECUADRO DE PREVISUALIZACIÓN
+                             ================================================= -->
+
+                        <div class="image-preview-area">
+
+
+                            <!-- PLACEHOLDER -->
+
+                            <div
+                                id="imagePlaceholder"
+                                class="image-placeholder"
+                            >
+
+                                <div class="image-placeholder-icon">
+                                    +
+                                </div>
+
+                                <strong>
+                                    Sin imagen
+                                </strong>
+
+                                <span>
+                                    La vista previa aparecerá aquí
+                                </span>
+
+                            </div>
+
+
+                            <!-- IMAGEN -->
+
+                            <img
+                                id="previewImagen"
+                                class="preview-image hidden"
+                                src=""
+                                alt="Vista previa del producto"
+                            >
+
+
+                        </div>
+
+
+                        <!-- =================================================
+                             PANEL DE CARGA
+                             ================================================= -->
+
+                        <div class="image-upload-content">
+
+
+                            <div class="upload-main-icon">
+                                ↑
+                            </div>
+
+
+                            <h4>
+                                Agrega una fotografía
+                            </h4>
+
+
+                            <p>
+                                Selecciona una imagen desde tu computador.
+                            </p>
+
+
+                            <label
+                                for="imagen"
+                                class="upload-label"
+                            >
+
+                                <span>
+                                    Seleccionar imagen
+                                </span>
+
+                            </label>
+
+
+                            <input
+                                type="file"
+                                id="imagen"
+                                name="imagen"
+                                accept="image/jpeg,image/png,image/webp,image/jpg"
+                            >
+
+
+                            <div class="upload-formats">
+
+                                <span>
+                                    JPG
+                                </span>
+
+                                <span>
+                                    PNG
+                                </span>
+
+                                <span>
+                                    WEBP
+                                </span>
+
+                                <span>
+                                    Máx. 10 MB
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+
+                        <!-- =================================================
+                             INFORMACIÓN DEL ARCHIVO
+                             ================================================= -->
+
+                        <div
+                            id="imageFileInfo"
+                            class="image-file-info hidden"
+                        >
+
+                            <div class="file-info-icon">
+                                ✓
+                            </div>
+
+
+                            <div class="file-info-text">
+
+                                <strong id="imageFileName">
+                                    Imagen seleccionada
+                                </strong>
+
+                                <span id="imageFileSize">
+                                    Archivo listo
+                                </span>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                id="removeImageBtn"
+                                class="remove-image-btn"
+                                title="Quitar imagen"
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         NOTA
+                         ================================================= -->
+
+                    <div class="image-upload-note">
+
+                        <span class="note-icon">
+                            i
+                        </span>
+
+                        <span>
+                            La imagen se almacenará de forma segura
+                            en Cloudinary.
+                        </span>
+
+                    </div>
+
+
+                </section>
+
+
+                <!-- =================================================
+                     ESTADO
+                     ================================================= -->
+
+                <section
+                    id="estadoProductoContainer"
+                    class="form-section hidden"
+                >
+
+                    <div class="section-heading">
+
+                        <div class="section-number">
+                            04
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Estado
+                            </h3>
+
+                            <p>
+                                Controla la disponibilidad del producto.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <label class="switch-row">
+
+                        <input
+                            type="checkbox"
+                            id="activo"
+                            checked
+                        >
+
+                        <span class="switch"></span>
+
+                        <div>
+
+                            <strong>
+                                Producto activo
+                            </strong>
+
+                            <small>
+                                El producto estará disponible
+                                en el inventario.
+                            </small>
+
+                        </div>
+
+                    </label>
+
+
+                </section>
+
+
+                <!-- =================================================
+                     ACCIONES
+                     ================================================= -->
+
+                <div class="form-actions">
+
+
+                    <button
+                        type="button"
+                        id="cancelarBtn"
+                        class="secondary-btn"
+                    >
+                        Cancelar
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        class="primary-btn"
+                    >
+                        Guardar producto
+                    </button>
+
+
+                </div>
+
+
+            </form>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         MODAL CONFIRMACIÓN
+         ========================================================= -->
+
+    <div
+        id="confirmModal"
+        class="modal hidden"
+    >
+
+        <div class="confirm-content">
+
+
+            <div class="confirm-icon">
+                !
+            </div>
+
+
+            <span class="eyebrow">
+                CONFIRMACIÓN
+            </span>
+
+
+            <h2>
+                Desactivar producto
+            </h2>
+
+
+            <p>
+                ¿Estás seguro de que deseas desactivar
+                este producto?
+            </p>
+
+
+            <strong
+                id="nombreProductoEliminar"
+                class="confirm-product-name"
+            ></strong>
+
+
+            <div class="form-actions">
+
+
+                <button
+                    type="button"
+                    id="cancelarConfirmBtn"
+                    class="secondary-btn"
+                >
+                    Cancelar
+                </button>
+
+
+                <button
+                    type="button"
+                    id="confirmarDesactivarBtn"
+                    class="danger-btn"
+                >
+                    Desactivar
+                </button>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+         ========================================================= -->
+
+    <script src="/productos.js"></script>
+
+</body>
+
+</html>

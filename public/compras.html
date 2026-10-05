@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        Compras - Lunas de Octubre
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/compras.css"
+    >
+</head>
+
+<body>
+
+    <!-- =====================================================
+         CONTENEDOR PRINCIPAL
+         ===================================================== -->
+
+    <div class="app-container">
+
+        <!-- =================================================
+             BARRA SUPERIOR
+             ================================================= -->
+
+        <header class="topbar">
+
+            <div class="topbar-left">
+
+                <button
+                    type="button"
+                    class="btn-back"
+                    onclick="volverAdmin()"
+                    title="Volver al panel"
+                >
+                    ←
+                </button>
+
+                <div class="brand">
+
+                    <div class="brand-icon">
+                        🌙
+                    </div>
+
+                    <div>
+                        <h1>
+                            Lunas de Octubre
+                        </h1>
+
+                        <span>
+                            Gestión de compras
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="topbar-right">
+
+                <div class="page-title">
+
+                    <span class="page-title-icon">
+                        🛒
+                    </span>
+
+                    <span>
+                        Compras
+                    </span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             CONTENIDO
+             ================================================= -->
+
+        <main class="main-content">
+
+            <!-- =================================================
+                 ENCABEZADO DE PÁGINA
+                 ================================================= -->
+
+            <section class="page-header">
+
+                <div>
+
+                    <span class="section-kicker">
+                        INVENTARIO
+                    </span>
+
+                    <h2>
+                        Registrar compra
+                    </h2>
+
+                    <p>
+                        Registra las compras realizadas a tus
+                        proveedores y actualiza automáticamente
+                        el inventario.
+                    </p>
+
+                </div>
+
+                <div class="header-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="limpiarCompra()"
+                    >
+                        Limpiar
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 MENSAJE
+                 ================================================= -->
+
+            <div
+                id="mensaje"
+                class="mensaje"
+                hidden
+            ></div>
+
+
+            <!-- =================================================
+                 FORMULARIO DE COMPRA
+                 ================================================= -->
+
+            <section class="purchase-card">
+
+                <!-- =============================================
+                     INFORMACIÓN GENERAL
+                     ============================================= -->
+
+                <div class="card-header">
+
+                    <div>
+
+                        <span class="card-kicker">
+                            INFORMACIÓN GENERAL
+                        </span>
+
+                        <h3>
+                            Datos de la compra
+                        </h3>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <!-- PROVEEDOR -->
+
+                    <div class="form-group">
+
+                        <label for="proveedor">
+                            Proveedor
+                        </label>
+
+                        <select
+                            id="proveedor"
+                        >
+                            <option value="">
+                                Selecciona un proveedor
+                            </option>
+                        </select>
+
+                    </div>
+
+
+                    <!-- FECHA -->
+
+                    <div class="form-group">
+
+                        <label for="fecha">
+                            Fecha de compra
+                        </label>
+
+                        <input
+                            type="date"
+                            id="fecha"
+                        >
+
+                    </div>
+
+
+                    <!-- OBSERVACIONES -->
+
+                    <div class="form-group form-group-full">
+
+                        <label for="observaciones">
+                            Observaciones
+                        </label>
+
+                        <textarea
+                            id="observaciones"
+                            rows="3"
+                            placeholder="Observaciones de la compra..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =============================================
+                     PRODUCTOS
+                     ============================================= -->
+
+                <div class="products-section">
+
+                    <div class="section-header">
+
+                        <div>
+
+                            <span class="card-kicker">
+                                PRODUCTOS
+                            </span>
+
+                            <h3>
+                                Productos de la compra
+                            </h3>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="btn-primary"
+                            onclick="agregarProducto()"
+                        >
+                            <span>
+                                +
+                            </span>
+
+                            Agregar producto
+                        </button>
+
+                    </div>
+
+
+                    <!-- TABLA -->
+
+                    <div class="table-wrapper">
+
+                        <table class="purchase-table">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Producto
+                                    </th>
+
+                                    <th>
+                                        Código
+                                    </th>
+
+                                    <th>
+                                        Cantidad
+                                    </th>
+
+                                    <th>
+                                        Precio compra
+                                    </th>
+
+                                    <th>
+                                        Subtotal
+                                    </th>
+
+                                    <th>
+                                        Acción
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody
+                                id="productosCompra"
+                            >
+
+                                <!--
+                                    Las filas se generan
+                                    dinámicamente desde compras.js
+                                -->
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+                    <!-- ESTADO VACÍO -->
+
+                    <div
+                        id="emptyProducts"
+                        class="empty-products"
+                    >
+
+                        <div class="empty-icon">
+                            🛒
+                        </div>
+
+                        <h4>
+                            No hay productos agregados
+                        </h4>
+
+                        <p>
+                            Agrega los productos que forman
+                            parte de esta compra.
+                        </p>
+
+                        <button
+                            type="button"
+                            class="btn-primary"
+                            onclick="agregarProducto()"
+                        >
+                            + Agregar primer producto
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =============================================
+                     RESUMEN
+                     ============================================= -->
+
+                <div class="purchase-summary">
+
+                    <div class="summary-info">
+
+                        <span>
+                            Productos
+                        </span>
+
+                        <strong id="cantidadProductos">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-total">
+
+                        <span>
+                            Total de la compra
+                        </span>
+
+                        <strong id="totalCompra">
+                            $0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =============================================
+                     ACCIONES
+                     ============================================= -->
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="volverAdmin()"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-primary btn-save"
+                        id="btnGuardar"
+                        onclick="guardarCompra()"
+                    >
+                        <span>
+                            ✓
+                        </span>
+
+                        Guardar compra
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 HISTORIAL DE COMPRAS
+                 ================================================= -->
+
+            <section class="history-card">
+
+                <div class="card-header history-header">
+
+                    <div>
+
+                        <span class="card-kicker">
+                            HISTORIAL
+                        </span>
+
+                        <h3>
+                            Compras registradas
+                        </h3>
+
+                        <p>
+                            Consulta las compras realizadas
+                            anteriormente.
+                        </p>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="cargarCompras()"
+                    >
+                        ↻ Actualizar
+                    </button>
+
+                </div>
+
+
+                <!-- TABLA HISTORIAL -->
+
+                <div class="table-wrapper">
+
+                    <table class="history-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    ID
+                                </th>
+
+                                <th>
+                                    Fecha
+                                </th>
+
+                                <th>
+                                    Proveedor
+                                </th>
+
+                                <th>
+                                    Productos
+                                </th>
+
+                                <th>
+                                    Total
+                                </th>
+
+                                <th>
+                                    Acción
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody
+                            id="historialCompras"
+                        >
+
+                            <!--
+                                Las compras se cargan
+                                desde compras.js
+                            -->
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <!-- HISTORIAL VACÍO -->
+
+                <div
+                    id="emptyHistory"
+                    class="empty-history"
+                    hidden
+                >
+
+                    <div class="empty-icon">
+                        📋
+                    </div>
+
+                    <h4>
+                        Aún no hay compras registradas
+                    </h4>
+
+                    <p>
+                        Cuando registres una compra aparecerá
+                        aquí.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL DETALLE DE COMPRA
+         ===================================================== -->
+
+    <div
+        id="modalDetalle"
+        class="modal-overlay"
+        hidden
+    >
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="card-kicker">
+                        DETALLE
+                    </span>
+
+                    <h3>
+                        Compra #<span id="detalleId">
+                            -
+                        </span>
+                    </h3>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="cerrarDetalle()"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="modal-info">
+
+                <div class="detail-box">
+
+                    <span>
+                        Proveedor
+                    </span>
+
+                    <strong id="detalleProveedor">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="detail-box">
+
+                    <span>
+                        Fecha
+                    </span>
+
+                    <strong id="detalleFecha">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="detail-box detail-box-full">
+
+                    <span>
+                        Observaciones
+                    </span>
+
+                    <strong id="detalleObservaciones">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-products">
+
+                <h4>
+                    Productos
+                </h4>
+
+                <div class="table-wrapper">
+
+                    <table class="detail-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Producto
+                                </th>
+
+                                <th>
+                                    Código
+                                </th>
+
+                                <th>
+                                    Cantidad
+                                </th>
+
+                                <th>
+                                    Precio
+                                </th>
+
+                                <th>
+                                    Subtotal
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody
+                            id="detalleProductos"
+                        ></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-total">
+
+                <span>
+                    Total
+                </span>
+
+                <strong id="detalleTotal">
+                    $0
+                </strong>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="cerrarDetalle()"
+                >
+                    Cerrar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+         ===================================================== -->
+
+    <script src="/compras.js"></script>
+
+</body>
+
+</html>

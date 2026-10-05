@@ -1,103 +1,775 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Lunas de Octubre</title>
 
-<style>
-body{
-    margin:0;
-    font-family:'Segoe UI',sans-serif;
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
-    color:white;
-}
+    <meta charset="UTF-8">
 
-.login-box{
-    background: rgba(255,255,255,0.05);
-    padding:40px;
-    border-radius:20px;
-    width:320px;
-    backdrop-filter: blur(12px);
-    box-shadow:0 15px 40px rgba(0,0,0,0.4);
-    text-align:center;
-}
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-h2{
-    margin-bottom:20px;
-    color:#ffd700;
-}
+    <meta
+        name="theme-color"
+        content="#020617"
+    >
 
-input{
-    width:100%;
-    padding:12px;
-    margin:10px 0;
-    border-radius:12px;
-    border:none;
-    background: rgba(255,255,255,0.1);
-    color:white;
-}
+    <title>Login - Lunas de Octubre</title>
 
-button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background: linear-gradient(135deg,#f7971e,#ffd200);
-    font-weight:bold;
-    cursor:pointer;
-}
+    <style>
 
-.error{
-    color:#ff4b2b;
-    margin-top:10px;
-    font-weight:bold;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-.logo{
-    font-size:22px;
-    margin-bottom:10px;
-}
-</style>
+        body {
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            font-family:
+                "Segoe UI",
+                Arial,
+                sans-serif;
+
+            color: #ffffff;
+
+            overflow: hidden;
+
+            background:
+                radial-gradient(
+                    circle at 15% 20%,
+                    rgba(56, 189, 248, 0.22),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 85% 80%,
+                    rgba(99, 102, 241, 0.25),
+                    transparent 30%
+                ),
+                radial-gradient(
+                    circle at 50% 100%,
+                    rgba(168, 85, 247, 0.18),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    #020617,
+                    #0f172a,
+                    #172554,
+                    #1e1b4b
+                );
+        }
+
+        .background {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+
+            border-radius: 50%;
+
+            filter: blur(2px);
+
+            opacity: 0.35;
+
+            animation:
+                floatOrb 8s ease-in-out infinite;
+        }
+
+        .orb-one {
+            width: 180px;
+            height: 180px;
+
+            top: -60px;
+            left: -50px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #38bdf8,
+                    #2563eb
+                );
+        }
+
+        .orb-two {
+            width: 220px;
+            height: 220px;
+
+            right: -80px;
+            bottom: -70px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #a855f7
+                );
+
+            animation-delay: -3s;
+        }
+
+        @keyframes floatOrb {
+
+            0%,
+            100% {
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+
+            50% {
+                transform:
+                    translateY(-18px)
+                    scale(1.05);
+            }
+
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 5;
+
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .login-box {
+            position: relative;
+
+            padding: 42px 36px 36px;
+
+            border-radius: 28px;
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.12);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(255, 255, 255, 0.11),
+                    rgba(255, 255, 255, 0.035)
+                );
+
+            backdrop-filter: blur(22px);
+
+            -webkit-backdrop-filter: blur(22px);
+
+            box-shadow:
+                0 30px 80px
+                rgba(0, 0, 0, 0.45),
+                inset 0 1px 0
+                rgba(255, 255, 255, 0.08);
+
+            overflow: hidden;
+        }
+
+        .login-box::before {
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
+            right: 0;
+
+            height: 3px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #38bdf8,
+                    #6366f1,
+                    #a855f7
+                );
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand-icon {
+            width: 78px;
+            height: 78px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin: 0 auto 17px;
+
+            border-radius: 24px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #38bdf8,
+                    #2563eb,
+                    #6366f1
+                );
+
+            box-shadow:
+                0 15px 35px
+                rgba(37, 99, 235, 0.30);
+
+            font-size: 38px;
+        }
+
+        .brand h1 {
+            font-size: 25px;
+            font-weight: 750;
+        }
+
+        .brand p {
+            margin-top: 7px;
+
+            color: #94a3b8;
+
+            font-size: 13px;
+        }
+
+        .login-title {
+            margin-bottom: 22px;
+        }
+
+        .login-title h2 {
+            margin-bottom: 5px;
+            font-size: 21px;
+        }
+
+        .login-title span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .field {
+            margin-bottom: 17px;
+        }
+
+        .field label {
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #cbd5e1;
+
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+
+            top: 50%;
+            left: 14px;
+
+            transform:
+                translateY(-50%);
+
+            color: #64748b;
+
+            font-size: 16px;
+
+            pointer-events: none;
+        }
+
+        input {
+            width: 100%;
+            height: 50px;
+
+            padding:
+                0 15px 0 43px;
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.10);
+
+            border-radius: 13px;
+
+            outline: none;
+
+            color: #ffffff;
+
+            background:
+                rgba(2, 6, 23, 0.42);
+
+            font-family: inherit;
+            font-size: 14px;
+
+            transition:
+                border-color 0.25s,
+                box-shadow 0.25s,
+                background 0.25s;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        input:focus {
+            border-color: #38bdf8;
+
+            background:
+                rgba(2, 6, 23, 0.60);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(56, 189, 248, 0.12);
+        }
+
+        .password-toggle {
+            position: absolute;
+
+            top: 50%;
+            right: 13px;
+
+            transform:
+                translateY(-50%);
+
+            width: auto;
+
+            padding: 4px 6px;
+
+            border: none;
+
+            background: transparent;
+
+            color: #64748b;
+
+            cursor: pointer;
+
+            font-size: 15px;
+        }
+
+        .password-toggle:hover {
+            color: #38bdf8;
+        }
+
+        .login-button {
+            width: 100%;
+            height: 52px;
+
+            margin-top: 8px;
+
+            border: none;
+            border-radius: 13px;
+
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0ea5e9,
+                    #2563eb,
+                    #4f46e5
+                );
+
+            font-family: inherit;
+
+            font-size: 14px;
+            font-weight: 750;
+
+            cursor: pointer;
+
+            box-shadow:
+                0 12px 28px
+                rgba(37, 99, 235, 0.28);
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s,
+                opacity 0.2s;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 16px 32px
+                rgba(37, 99, 235, 0.38);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            cursor: wait;
+        }
+
+        .error {
+            min-height: 20px;
+
+            margin-top: 14px;
+
+            padding: 0 4px;
+
+            color: #fca5a5;
+
+            text-align: center;
+
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .security {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 7px;
+
+            margin-top: 24px;
+            padding-top: 20px;
+
+            border-top:
+                1px solid
+                rgba(255, 255, 255, 0.07);
+
+            color: #64748b;
+
+            font-size: 11px;
+        }
+
+        .security-dot {
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: #22c55e;
+
+            box-shadow:
+                0 0 8px
+                rgba(34, 197, 94, 0.7);
+        }
+
+        .footer {
+            margin-top: 18px;
+
+            text-align: center;
+
+            color: #475569;
+
+            font-size: 11px;
+        }
+
+        @media (max-width: 480px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .login-box {
+                padding:
+                    34px 23px 27px;
+
+                border-radius: 23px;
+            }
+
+            .brand-icon {
+                width: 68px;
+                height: 68px;
+
+                border-radius: 21px;
+
+                font-size: 32px;
+            }
+
+            .brand h1 {
+                font-size: 22px;
+            }
+
+            .login-title h2 {
+                font-size: 19px;
+            }
+
+        }
+
+    </style>
 
 </head>
 
+
 <body>
 
-<div class="login-box">
 
-<div class="logo">🌙 Lunas de Octubre</div>
-<h2>🔐 Panel Admin</h2>
+    <div class="background">
 
-<input id="usuario" placeholder="Usuario">
-<input id="password" type="password" placeholder="Contraseña">
+        <div class="orb orb-one"></div>
 
-<button onclick="login()">Ingresar</button>
+        <div class="orb orb-two"></div>
 
-<div class="error" id="error"></div>
+    </div>
 
-</div>
 
-<script>
+    <div class="login-wrapper">
 
-function login(){
+        <div class="login-box">
 
-    const user = document.getElementById("usuario").value;
-    const pass = document.getElementById("password").value;
 
-    if(user === "Yuris" && pass === "lunas1326"){
-        localStorage.setItem("login","ok"); // 🔥 CLAVE
-        window.location.href = "admin.html";
-    }else{
-        document.getElementById("error").innerText = "❌ Usuario o contraseña incorrectos";
-    }
-}
+            <div class="brand">
 
-</script>
+                <div class="brand-icon">
+                    🌙
+                </div>
+
+                <h1>
+                    Lunas de Octubre
+                </h1>
+
+                <p>
+                    Sistema de administración
+                </p>
+
+            </div>
+
+
+            <div class="login-title">
+
+                <h2>
+                    Iniciar sesión
+                </h2>
+
+                <span>
+                    Accede al panel administrativo
+                </span>
+
+            </div>
+
+
+            <div class="field">
+
+                <label for="usuario">
+                    Usuario
+                </label>
+
+                <div class="input-wrapper">
+
+                    <span class="input-icon">
+                        👤
+                    </span>
+
+                    <input
+                        type="text"
+                        id="usuario"
+                        placeholder="Ingresa tu usuario"
+                        autocomplete="username"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="field">
+
+                <label for="password">
+                    Contraseña
+                </label>
+
+                <div class="input-wrapper">
+
+                    <span class="input-icon">
+                        🔒
+                    </span>
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Ingresa tu contraseña"
+                        autocomplete="current-password"
+                        onkeydown="manejarEnter(event)"
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        id="passwordToggle"
+                        onclick="mostrarPassword()"
+                        aria-label="Mostrar contraseña"
+                    >
+                        👁
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="login-button"
+                id="loginButton"
+                onclick="login()"
+            >
+                Ingresar al panel
+            </button>
+
+
+            <div
+                class="error"
+                id="error"
+            ></div>
+
+
+            <div class="security">
+
+                <span class="security-dot"></span>
+
+                Acceso protegido
+
+            </div>
+
+        </div>
+
+
+        <div class="footer">
+            Lunas de Octubre · Panel Administrativo
+        </div>
+
+    </div>
+
+
+    <script>
+
+        function login() {
+
+            const user =
+                document
+                    .getElementById("usuario")
+                    .value
+                    .trim();
+
+            const pass =
+                document
+                    .getElementById("password")
+                    .value;
+
+            const error =
+                document
+                    .getElementById("error");
+
+            const button =
+                document
+                    .getElementById("loginButton");
+
+
+            error.textContent = "";
+
+
+            if (!user || !pass) {
+
+                error.textContent =
+                    "Completa el usuario y la contraseña.";
+
+                return;
+
+            }
+
+
+            if (
+                user === "Yuris" &&
+                pass === "lunas1326"
+            ) {
+
+                /*
+                 * Las dos páginas utilizan una clave diferente.
+                 * Guardamos ambas para mantener la sesión.
+                 */
+
+                localStorage.setItem(
+                    "login",
+                    "ok"
+                );
+
+                localStorage.setItem(
+                    "lunasAdmin",
+                    "ok"
+                );
+
+
+                button.textContent =
+                    "Ingresando...";
+
+                button.disabled = true;
+
+                button.style.opacity = "0.7";
+
+
+                window.location.href =
+                    "/admin.html";
+
+            } else {
+
+                error.textContent =
+                    "Usuario o contraseña incorrectos.";
+
+            }
+
+        }
+
+
+        function mostrarPassword() {
+
+            const password =
+                document
+                    .getElementById("password");
+
+            const toggle =
+                document
+                    .getElementById("passwordToggle");
+
+
+            if (
+                password.type === "password"
+            ) {
+
+                password.type = "text";
+
+                toggle.textContent = "🙈";
+
+            } else {
+
+                password.type = "password";
+
+                toggle.textContent = "👁";
+
+            }
+
+        }
+
+
+        function manejarEnter(event) {
+
+            if (event.key === "Enter") {
+
+                login();
+
+            }
+
+        }
+
+    </script>
+
 
 </body>
+
 </html>

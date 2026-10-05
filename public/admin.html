@@ -1,310 +1,1679 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - Lunas de Octubre</title>
 
-<style>
-body{
-    margin:0;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
-    color:white;
-}
+    <meta charset="UTF-8">
 
-/* HEADER */
-header{
-    background: linear-gradient(135deg,#1f1c2c,#928dab);
-    padding:22px;
-    text-align:center;
-    font-size:24px;
-    font-weight:bold;
-    letter-spacing:1px;
-}
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-/* LOGOUT (MEJORADO) */
-.logout-btn{
-    padding:8px 16px;
-    background: linear-gradient(135deg,#ff416c,#ff4b2b);
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    display:block;
-    margin:12px auto;
-    font-size:13px;
-    font-weight:bold;
-    width:160px;
-    transition:0.3s;
-}
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
 
-.logout-btn:hover{
-    transform:scale(1.05);
-    opacity:0.9;
-}
+    <title>Panel Administrativo - Lunas de Octubre</title>
 
-/* FORM */
-.container{
-    max-width:520px;
-    margin:20px auto;
-    background: rgba(255,255,255,0.05);
-    padding:22px;
-    border-radius:18px;
-    box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
+    <!-- =====================================================
+         QR CODE
+    ====================================================== -->
 
-input{
-    width:100%;
-    padding:11px;
-    margin:8px 0;
-    border-radius:10px;
-    border:none;
-    background: rgba(255,255,255,0.1);
-    color:white;
-    outline:none;
-}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-button{
-    width:100%;
-    padding:11px;
-    border:none;
-    border-radius:10px;
-    background: linear-gradient(135deg,#ffd200,#f7971e);
-    cursor:pointer;
-    font-weight:bold;
-    transition:0.3s;
-}
+    <style>
 
-button:hover{
-    transform:scale(1.02);
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-/* LISTA */
-.lista{
-    max-width:1100px;
-    margin:30px auto;
-    display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(230px,1fr));
-    gap:18px;
-    padding:0 15px;
-}
+        body {
+            min-height: 100vh;
 
-/* CARD MEJORADA */
-.card{
-    background: rgba(255,255,255,0.06);
-    padding:14px;
-    border-radius:15px;
-    box-shadow:0 8px 18px rgba(0,0,0,0.3);
-    transition:0.3s;
-}
+            font-family: "Segoe UI", Arial, sans-serif;
 
-.card:hover{
-    transform:translateY(-5px);
-}
+            color: #ffffff;
 
-/* IMAGEN BALANCEADA (CLAVE) */
-.card img{
-    width:100%;
-    height:170px;
-    object-fit:cover;
-    border-radius:12px;
-    margin-bottom:10px;
-}
+            background:
+                radial-gradient(
+                    circle at top left,
+                    rgba(56, 189, 248, 0.20),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at bottom right,
+                    rgba(168, 85, 247, 0.18),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    #020617,
+                    #0f172a,
+                    #1e1b4b
+                );
+        }
 
-/* TEXTO */
-.card h4{
-    margin:5px 0;
-    font-size:16px;
-}
+        /* =====================================================
+           HEADER
+        ====================================================== */
 
-.card p{
-    margin:3px 0;
-    font-size:14px;
-    opacity:0.9;
-}
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
 
-/* BOTONES */
-.actions{
-    display:flex;
-    gap:8px;
-    margin-top:10px;
-}
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
 
-.actions button{
-    flex:1;
-    padding:8px;
-    font-size:13px;
-    border-radius:8px;
-}
+            padding: 18px 30px;
 
-.edit{background:#007bff;color:white;}
-.delete{background:#ff4b2b;color:white;}
+            background: rgba(15, 23, 42, 0.88);
 
-.mensaje{
-    text-align:center;
-    margin-top:10px;
-    color:#ffd200;
-}
-</style>
+            backdrop-filter: blur(14px);
+
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.08);
+
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 14px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #38bdf8,
+                    #6366f1
+                );
+
+            box-shadow:
+                0 8px 25px
+                rgba(56, 189, 248, 0.25);
+
+            font-size: 22px;
+        }
+
+        .logo-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .logo-text span {
+            display: block;
+
+            margin-top: 2px;
+
+            color: #94a3b8;
+
+            font-size: 12px;
+        }
+
+        /* =====================================================
+           BOTÓN CERRAR SESIÓN
+        ====================================================== */
+
+        .logout-btn {
+            border: none;
+            border-radius: 10px;
+
+            padding: 10px 16px;
+
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #ef4444,
+                    #dc2626
+                );
+
+            font-size: 13px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.25s;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 8px 20px
+                rgba(239, 68, 68, 0.25);
+        }
+
+        /* =====================================================
+           CONTENIDO
+        ====================================================== */
+
+        main {
+            width: min(1150px, 92%);
+
+            margin: 45px auto;
+        }
+
+        .welcome {
+            margin-bottom: 30px;
+        }
+
+        .welcome h2 {
+            margin-bottom: 8px;
+
+            font-size: 30px;
+        }
+
+        .welcome p {
+            color: #94a3b8;
+
+            font-size: 15px;
+        }
+
+        /* =====================================================
+           MÓDULOS
+        ====================================================== */
+
+        .modules {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(250px, 1fr)
+                );
+
+            gap: 20px;
+        }
+
+        .module {
+            position: relative;
+
+            overflow: hidden;
+
+            min-height: 220px;
+
+            padding: 28px;
+
+            border-radius: 22px;
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.08);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(255, 255, 255, 0.08),
+                    rgba(255, 255, 255, 0.025)
+                );
+
+            box-shadow:
+                0 15px 40px
+                rgba(0, 0, 0, 0.25);
+
+            transition:
+                transform 0.25s,
+                border-color 0.25s,
+                box-shadow 0.25s;
+        }
+
+        .module::after {
+            content: "";
+
+            position: absolute;
+
+            width: 150px;
+            height: 150px;
+
+            right: -70px;
+            bottom: -70px;
+
+            border-radius: 50%;
+
+            background:
+                rgba(56, 189, 248, 0.10);
+        }
+
+        .module:hover {
+            transform: translateY(-6px);
+
+            border-color:
+                rgba(56, 189, 248, 0.35);
+
+            box-shadow:
+                0 20px 45px
+                rgba(0, 0, 0, 0.35);
+        }
+
+        .module-icon {
+            width: 58px;
+            height: 58px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin-bottom: 20px;
+
+            border-radius: 17px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #38bdf8,
+                    #2563eb
+                );
+
+            box-shadow:
+                0 10px 25px
+                rgba(37, 99, 235, 0.25);
+
+            font-size: 26px;
+        }
+
+        .module h3 {
+            margin-bottom: 8px;
+
+            font-size: 20px;
+        }
+
+        .module p {
+            min-height: 42px;
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+        }
+
+        .module button {
+            position: relative;
+
+            z-index: 2;
+
+            width: 100%;
+
+            margin-top: 22px;
+
+            padding: 12px 16px;
+
+            border: none;
+
+            border-radius: 11px;
+
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0ea5e9,
+                    #2563eb
+                );
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.25s;
+        }
+
+        .module button:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 10px 25px
+                rgba(37, 99, 235, 0.30);
+        }
+
+        .module.disabled {
+            opacity: 0.65;
+        }
+
+        .module.disabled button {
+            background: #334155;
+
+            cursor: default;
+        }
+
+        /* =====================================================
+           MÓDULO QR
+        ====================================================== */
+
+        .module-qr {
+            border-color:
+                rgba(250, 204, 21, 0.22);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(250, 204, 21, 0.10),
+                    rgba(255, 255, 255, 0.025)
+                );
+        }
+
+        .module-qr:hover {
+            border-color:
+                rgba(250, 204, 21, 0.50);
+        }
+
+        .module-qr .module-icon {
+            background:
+                linear-gradient(
+                    135deg,
+                    #facc15,
+                    #d97706
+                );
+
+            box-shadow:
+                0 10px 25px
+                rgba(250, 204, 21, 0.20);
+        }
+
+        .module-qr button {
+            background:
+                linear-gradient(
+                    135deg,
+                    #eab308,
+                    #ca8a04
+                );
+
+            color: #111827;
+        }
+
+        .module-qr button:hover {
+            box-shadow:
+                0 10px 25px
+                rgba(250, 204, 21, 0.25);
+        }
+
+        /* =====================================================
+           MODAL QR
+        ====================================================== */
+
+        .qr-overlay {
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 1000;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            background:
+                rgba(2, 6, 23, 0.82);
+
+            backdrop-filter: blur(10px);
+        }
+
+        .qr-overlay.active {
+            display: flex;
+        }
+
+        .qr-modal {
+            position: relative;
+
+            width: min(440px, 100%);
+
+            max-height: 92vh;
+
+            overflow-y: auto;
+
+            padding: 30px;
+
+            border-radius: 26px;
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.12);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #0f172a,
+                    #111827,
+                    #1e1b4b
+                );
+
+            box-shadow:
+                0 30px 80px
+                rgba(0, 0, 0, 0.55);
+
+            text-align: center;
+
+            animation:
+                aparecerQR 0.25s ease;
+        }
+
+        @keyframes aparecerQR {
+
+            from {
+                opacity: 0;
+
+                transform:
+                    translateY(20px)
+                    scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+
+        }
+
+        .qr-close {
+            position: absolute;
+
+            top: 14px;
+            right: 14px;
+
+            width: 36px;
+            height: 36px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border: none;
+
+            border-radius: 50%;
+
+            color: #cbd5e1;
+
+            background:
+                rgba(255, 255, 255, 0.08);
+
+            font-size: 20px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .qr-close:hover {
+            color: #ffffff;
+
+            background:
+                rgba(239, 68, 68, 0.70);
+        }
+
+        .qr-title {
+            margin-bottom: 8px;
+
+            color: #f8fafc;
+
+            font-size: 24px;
+        }
+
+        .qr-subtitle {
+            margin-bottom: 24px;
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+        }
+
+        .qr-box {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 260px;
+            height: 260px;
+
+            margin: 0 auto 24px;
+
+            padding: 15px;
+
+            border-radius: 20px;
+
+            background: #ffffff;
+
+            box-shadow:
+                0 15px 40px
+                rgba(0, 0, 0, 0.35);
+        }
+
+        #qrcode {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 230px;
+            height: 230px;
+        }
+
+        #qrcode img,
+        #qrcode canvas {
+            display: block;
+
+            max-width: 230px;
+            max-height: 230px;
+        }
+
+        .qr-url {
+            overflow: hidden;
+
+            margin-bottom: 20px;
+
+            padding: 11px 14px;
+
+            border-radius: 10px;
+
+            color: #cbd5e1;
+
+            background:
+                rgba(255, 255, 255, 0.06);
+
+            font-size: 12px;
+
+            white-space: nowrap;
+
+            text-overflow: ellipsis;
+        }
+
+        .qr-actions {
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 10px;
+        }
+
+        .qr-action {
+            border: none;
+
+            border-radius: 11px;
+
+            padding: 13px 15px;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.25s;
+        }
+
+        .qr-action:hover {
+            transform: translateY(-2px);
+        }
+
+        .qr-download {
+            color: #111827;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #facc15,
+                    #eab308
+                );
+        }
+
+        .qr-download:hover {
+            box-shadow:
+                0 10px 25px
+                rgba(250, 204, 21, 0.25);
+        }
+
+        .qr-open {
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0ea5e9,
+                    #2563eb
+                );
+        }
+
+        .qr-open:hover {
+            box-shadow:
+                0 10px 25px
+                rgba(37, 99, 235, 0.25);
+        }
+
+        .qr-status {
+            min-height: 18px;
+
+            margin-top: 15px;
+
+            color: #94a3b8;
+
+            font-size: 12px;
+        }
+
+        /* =====================================================
+           FOOTER
+        ====================================================== */
+
+        footer {
+            padding: 35px 20px;
+
+            text-align: center;
+
+            color: #64748b;
+
+            font-size: 12px;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ====================================================== */
+
+        @media (max-width: 650px) {
+
+            header {
+                padding: 15px 18px;
+            }
+
+            .logo-text h1 {
+                font-size: 16px;
+            }
+
+            .logout-btn {
+                padding: 9px 12px;
+
+                font-size: 12px;
+            }
+
+            main {
+                margin-top: 30px;
+            }
+
+            .welcome h2 {
+                font-size: 25px;
+            }
+
+            .module {
+                padding: 23px;
+            }
+
+            .qr-modal {
+                padding: 25px 18px;
+            }
+
+            .qr-box {
+                width: 240px;
+                height: 240px;
+            }
+
+            #qrcode {
+                width: 210px;
+                height: 210px;
+            }
+
+            #qrcode img,
+            #qrcode canvas {
+                max-width: 210px;
+                max-height: 210px;
+            }
+
+        }
+
+        @media (max-width: 420px) {
+
+            .qr-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-box {
+                width: 220px;
+                height: 220px;
+            }
+
+            #qrcode {
+                width: 190px;
+                height: 190px;
+            }
+
+            #qrcode img,
+            #qrcode canvas {
+                max-width: 190px;
+                max-height: 190px;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-<header>🌙 Admin Lunas de Octubre</header>
 
-<button onclick="logout()" class="logout-btn">Cerrar sesión</button>
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
-<div class="container">
-<h3>Agregar Producto</h3>
+    <header>
 
-<input id="nombre" placeholder="Nombre">
-<input id="precio" placeholder="Precio">
-<input id="cantidad" placeholder="Cantidad">
+        <div class="logo">
 
-<input type="file" id="imagen">
-<img id="preview" style="width:100%;margin-top:10px;border-radius:10px;display:none;">
+            <div class="logo-icon">
+                🌙
+            </div>
 
-<button onclick="guardar()">Guardar</button>
-<div id="msg" class="mensaje"></div>
-</div>
+            <div class="logo-text">
 
-<h3 style="text-align:center;">📦 Productos</h3>
-<div id="lista" class="lista"></div>
+                <h1>
+                    Lunas de Octubre
+                </h1>
 
-<script>
+                <span>
+                    Panel administrativo
+                </span>
 
-/* LOGIN */
-if(!localStorage.getItem("login")){
-    window.location.href="login.html";
-}
+            </div>
 
-function logout(){
-    localStorage.removeItem("login");
-    window.location.href="login.html";
-}
+        </div>
 
-/* PREVIEW */
-imagen.onchange = ()=>{
-    const file = imagen.files[0];
-    const reader = new FileReader();
 
-    reader.onload = e=>{
-        preview.src = e.target.result;
-        preview.style.display="block";
-    }
+        <button
+            class="logout-btn"
+            onclick="logout()"
+        >
+            Cerrar sesión
+        </button>
 
-    reader.readAsDataURL(file);
-}
+    </header>
 
-/* GUARDAR */
-function guardar(){
 
-    if(!nombre.value || !precio.value || !cantidad.value){
-        msg.innerText = "❌ Completa todos los campos";
-        return;
-    }
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+    ====================================================== -->
 
-    if(!imagen.files[0]){
-        msg.innerText = "❌ Selecciona una imagen";
-        return;
-    }
+    <main>
 
-    const formData = new FormData();
+        <section class="welcome">
 
-    formData.append("nombre", nombre.value);
-    formData.append("precio", precio.value);
-    formData.append("cantidad", cantidad.value);
-    formData.append("imagen", imagen.files[0]);
+            <h2>
+                Bienvenido al panel
+            </h2>
 
-    fetch("https://lunas-octubre.onrender.com/api/productos",{
-        method:"POST",
-        body:formData
-    })
-    .then(res => res.json())
-    .then(data => {
+            <p>
+                Administra los diferentes módulos
+                de Lunas de Octubre desde un solo lugar.
+            </p>
 
-        if(data.error){
-            msg.innerText = "❌ " + data.error;
-            return;
+        </section>
+
+
+        <section class="modules">
+
+
+            <!-- =================================================
+                 PRODUCTOS
+            ================================================== -->
+
+            <article class="module">
+
+                <div class="module-icon">
+                    📦
+                </div>
+
+                <h3>
+                    Productos
+                </h3>
+
+                <p>
+                    Gestiona productos, precios,
+                    inventario, categorías, proveedores
+                    e imágenes.
+                </p>
+
+                <button onclick="abrirProductos()">
+                    Administrar productos
+                </button>
+
+            </article>
+
+
+            <!-- =================================================
+                 QR CATÁLOGO
+            ================================================== -->
+
+            <article class="module module-qr">
+
+                <div class="module-icon">
+                    ▣
+                </div>
+
+                <h3>
+                    Compartir catálogo
+                </h3>
+
+                <p>
+                    Genera el código QR oficial
+                    para compartir el catálogo
+                    público de Lunas de Octubre.
+                </p>
+
+                <button onclick="abrirQR()">
+                    Generar código QR
+                </button>
+
+            </article>
+
+
+               <!-- =================================================
+                 COMPRAS — ACTIVO
+             ================================================== -->
+
+             <article class="module">
+
+             <div class="module-icon">
+            🛒
+            </div>
+
+             <h3>
+             Compras
+             </h3>
+
+            <p>
+             Controla las compras realizadas
+              y el ingreso de mercancía.
+           </p>
+ 
+              <button
+             type="button"
+             onclick="abrirCompras()"
+             >
+           Abrir compras
+           </button>
+
+           </article>
+
+
+            <!-- =================================================
+                 VENTAS
+            ================================================== -->
+
+            <article class="module disabled">
+
+                <div class="module-icon">
+                    💰
+                </div>
+
+                <h3>
+                    Ventas
+                </h3>
+
+                <p>
+                    Registra ventas y consulta
+                    el movimiento comercial.
+                </p>
+
+                <button>
+                    Próximamente
+                </button>
+
+            </article>
+
+
+            <!-- =================================================
+                 INVENTARIO
+            ================================================== -->
+
+            <article class="module disabled">
+
+                <div class="module-icon">
+                    📊
+                </div>
+
+                <h3>
+                    Inventario
+                </h3>
+
+                <p>
+                    Consulta existencias, mínimos
+                    y movimientos del inventario.
+                </p>
+
+                <button>
+                    Próximamente
+                </button>
+
+            </article>
+
+
+            <!-- =================================================
+                 PROVEEDORES
+            ================================================== -->
+
+            <article class="module disabled">
+
+                <div class="module-icon">
+                    🚚
+                </div>
+
+                <h3>
+                    Proveedores
+                </h3>
+
+                <p>
+                    Administra los proveedores
+                    y sus datos comerciales.
+                </p>
+
+                <button>
+                    Próximamente
+                </button>
+
+            </article>
+
+
+            <!-- =================================================
+                 REPORTES
+            ================================================== -->
+
+            <article class="module disabled">
+
+                <div class="module-icon">
+                    📈
+                </div>
+
+                <h3>
+                    Reportes
+                </h3>
+
+                <p>
+                    Consulta estadísticas y resultados
+                    del negocio.
+                </p>
+
+                <button>
+                    Próximamente
+                </button>
+
+            </article>
+
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         MODAL GENERADOR QR
+    ====================================================== -->
+
+    <div
+        id="qrOverlay"
+        class="qr-overlay"
+        onclick="cerrarQRDesdeFondo(event)"
+    >
+
+        <div
+            class="qr-modal"
+            onclick="event.stopPropagation()"
+        >
+
+            <button
+                class="qr-close"
+                onclick="cerrarQR()"
+                aria-label="Cerrar"
+            >
+                ×
+            </button>
+
+
+            <h2 class="qr-title">
+                Código QR
+            </h2>
+
+
+            <p class="qr-subtitle">
+                Escanea este código para abrir
+                el catálogo público de
+                <strong>Lunas de Octubre</strong>.
+            </p>
+
+
+            <div class="qr-box">
+
+                <div id="qrcode"></div>
+
+            </div>
+
+
+            <div class="qr-url">
+                https://lunas-octubre.onrender.com/
+            </div>
+
+
+            <div class="qr-actions">
+
+                <button
+                    class="qr-action qr-download"
+                    onclick="descargarQR()"
+                >
+                    Descargar QR
+                </button>
+
+
+                <button
+                    class="qr-action qr-open"
+                    onclick="abrirCatalogo()"
+                >
+                    Abrir catálogo
+                </button>
+
+            </div>
+
+
+            <div
+                id="qrStatus"
+                class="qr-status"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer>
+
+        Lunas de Octubre · Sistema administrativo
+
+    </footer>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script>
+
+        /* =====================================================
+           SEGURIDAD DE ACCESO ACTUAL
+        ===================================================== */
+
+        if (!localStorage.getItem("login")) {
+
+            window.location.href = "/login.html";
+
         }
 
-        msg.innerText="✅ Producto guardado";
 
-        nombre.value="";
-        precio.value="";
-        cantidad.value="";
-        imagen.value="";
-        preview.style.display="none";
+        /* =====================================================
+           CERRAR SESIÓN
+        ===================================================== */
 
-        cargarProductos();
-    })
-    .catch(()=>{
-        msg.innerText="❌ Error al guardar";
-    });
-}
+        function logout() {
 
-/* CARGAR */
-function cargarProductos(){
+            localStorage.removeItem("login");
 
-fetch("https://lunas-octubre.onrender.com/api/productos")
-.then(res=>res.json())
-.then(data=>{
+            localStorage.removeItem("lunasAdmin");
 
-    const contenedor = document.getElementById("lista");
-    contenedor.innerHTML = "";
+            window.location.href = "/login.html";
 
-    data.forEach(p => {
+        }
 
-        contenedor.innerHTML += `
-        <div class="card">
-            <img src="${p.imagen}">
-            <h4>${p.nombre}</h4>
-            <p>💰 $${p.precio}</p>
-            <p>📦 Stock: ${p.cantidad}</p>
 
-            <div class="actions">
-                <button class="edit" onclick="editar(${p.id})">Editar</button>
-                <button class="delete" onclick="eliminar(${p.id})">Eliminar</button>
-            </div>
-        </div>
-        `;
-    });
+        /* =====================================================
+           PRODUCTOS
+        ===================================================== */
 
-});
-}
+        function abrirProductos() {
 
-/* ELIMINAR */
-function eliminar(id){
-    if(confirm("¿Eliminar producto?")){
-        fetch(`https://lunas-octubre.onrender.com/api/productos/${id}`,{
-            method:"DELETE"
-        })
-        .then(()=>cargarProductos());
-    }
-}
+            window.location.href = "/productos.html";
 
-/* EDITAR */
-function editar(id){
-    const nombreNuevo = prompt("Nombre:");
-    const precioNuevo = prompt("Precio:");
-    const cantidadNueva = prompt("Cantidad:");
+        }
 
-    fetch(`https://lunas-octubre.onrender.com/api/productos/${id}`,{
-        method:"PUT",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            nombre:nombreNuevo,
-            precio:precioNuevo,
-            cantidad:cantidadNueva
-        })
-    })
-    .then(()=>cargarProductos());
-}
+        function abrirCompras() {
+         window.location.href = "/compras.html";
+        }
 
-/* INICIO */
-cargarProductos();
 
-</script>
+        /* =====================================================
+           CONFIGURACIÓN DEL CATÁLOGO
+        ===================================================== */
+
+        const URL_CATALOGO =
+            "https://lunas-octubre.onrender.com/";
+
+
+        let qrGenerado = false;
+
+
+        /* =====================================================
+           ABRIR QR
+        ===================================================== */
+
+        function abrirQR() {
+
+            const overlay =
+                document.getElementById("qrOverlay");
+
+            const qrContainer =
+                document.getElementById("qrcode");
+
+            const status =
+                document.getElementById("qrStatus");
+
+
+            overlay.classList.add("active");
+
+
+            if (!qrGenerado) {
+
+                qrContainer.innerHTML = "";
+
+
+                new QRCode(
+
+                    qrContainer,
+
+                    {
+                        text: URL_CATALOGO,
+
+                        width: 230,
+
+                        height: 230,
+
+                        colorDark: "#111827",
+
+                        colorLight: "#ffffff",
+
+                        correctLevel:
+                            QRCode.CorrectLevel.H
+
+                    }
+
+                );
+
+
+                qrGenerado = true;
+
+
+                status.textContent =
+                    "Código QR generado correctamente.";
+
+            }
+
+        }
+
+
+        /* =====================================================
+           CERRAR QR
+        ===================================================== */
+
+        function cerrarQR() {
+
+            document
+                .getElementById("qrOverlay")
+                .classList.remove("active");
+
+        }
+
+
+        function cerrarQRDesdeFondo(event) {
+
+            if (
+                event.target.id === "qrOverlay"
+            ) {
+
+                cerrarQR();
+
+            }
+
+        }
+
+
+        /* =====================================================
+           ABRIR CATÁLOGO
+        ===================================================== */
+
+        function abrirCatalogo() {
+
+            window.open(
+                URL_CATALOGO,
+                "_blank"
+            );
+
+        }
+
+
+        /* =====================================================
+           DESCARGAR QR COMO PNG ELEGANTE
+        ===================================================== */
+
+        function descargarQR() {
+
+            const qrContainer =
+                document.getElementById("qrcode");
+
+
+            const qrCanvas =
+                qrContainer.querySelector("canvas");
+
+
+            const qrImage =
+                qrContainer.querySelector("img");
+
+
+            if (!qrCanvas && !qrImage) {
+
+                document.getElementById(
+                    "qrStatus"
+                ).textContent =
+                    "Espera un momento mientras se genera el QR.";
+
+                return;
+
+            }
+
+
+            /* =================================================
+               MEDIDAS DEL DISEÑO
+            ================================================== */
+
+            const canvas =
+                document.createElement("canvas");
+
+
+            const ctx =
+                canvas.getContext("2d");
+
+
+            const ancho = 1000;
+
+            const alto = 1250;
+
+
+            canvas.width = ancho;
+
+            canvas.height = alto;
+
+
+            /* =================================================
+               FONDO
+            ================================================== */
+
+            const fondo =
+                ctx.createLinearGradient(
+                    0,
+                    0,
+                    ancho,
+                    alto
+                );
+
+
+            fondo.addColorStop(
+                0,
+                "#020617"
+            );
+
+
+            fondo.addColorStop(
+                0.50,
+                "#0f172a"
+            );
+
+
+            fondo.addColorStop(
+                1,
+                "#1e1b4b"
+            );
+
+
+            ctx.fillStyle = fondo;
+
+            ctx.fillRect(
+                0,
+                0,
+                ancho,
+                alto
+            );
+
+
+            /* =================================================
+               DESTELLOS
+            ================================================== */
+
+            const brillo1 =
+                ctx.createRadialGradient(
+                    100,
+                    100,
+                    10,
+                    100,
+                    100,
+                    450
+                );
+
+
+            brillo1.addColorStop(
+                0,
+                "rgba(56,189,248,0.28)"
+            );
+
+
+            brillo1.addColorStop(
+                1,
+                "rgba(56,189,248,0)"
+            );
+
+
+            ctx.fillStyle = brillo1;
+
+            ctx.fillRect(
+                0,
+                0,
+                ancho,
+                alto
+            );
+
+
+            const brillo2 =
+                ctx.createRadialGradient(
+                    900,
+                    1100,
+                    10,
+                    900,
+                    1100,
+                    450
+                );
+
+
+            brillo2.addColorStop(
+                0,
+                "rgba(168,85,247,0.22)"
+            );
+
+
+            brillo2.addColorStop(
+                1,
+                "rgba(168,85,247,0)"
+            );
+
+
+            ctx.fillStyle = brillo2;
+
+            ctx.fillRect(
+                0,
+                0,
+                ancho,
+                alto
+            );
+
+
+            /* =================================================
+               BORDE EXTERIOR
+            ================================================== */
+
+            ctx.strokeStyle =
+                "#facc15";
+
+            ctx.lineWidth = 8;
+
+            ctx.strokeRect(
+                30,
+                30,
+                ancho - 60,
+                alto - 60
+            );
+
+
+            /* =================================================
+               LUNA DECORATIVA
+            ================================================== */
+
+            ctx.beginPath();
+
+            ctx.arc(
+                500,
+                155,
+                48,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+                "#facc15";
+
+            ctx.fill();
+
+
+            ctx.beginPath();
+
+            ctx.arc(
+                520,
+                138,
+                48,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+                "#020617";
+
+            ctx.fill();
+
+
+            /* =================================================
+               TÍTULO
+            ================================================== */
+
+            ctx.textAlign = "center";
+
+            ctx.fillStyle =
+                "#ffffff";
+
+            ctx.font =
+                "700 58px Segoe UI, Arial";
+
+            ctx.fillText(
+                "LUNAS DE OCTUBRE",
+                500,
+                270
+            );
+
+
+            ctx.fillStyle =
+                "#facc15";
+
+            ctx.font =
+                "700 30px Segoe UI, Arial";
+
+            ctx.fillText(
+                "CATÁLOGO OFICIAL",
+                500,
+                320
+            );
+
+
+            /* =================================================
+               ÁREA BLANCA DEL QR
+            ================================================== */
+
+            const qrX = 170;
+
+            const qrY = 375;
+
+            const qrSize = 660;
+
+
+            ctx.fillStyle =
+                "#ffffff";
+
+
+            /* Sombra */
+
+            ctx.shadowColor =
+                "rgba(0,0,0,0.45)";
+
+            ctx.shadowBlur = 30;
+
+            ctx.shadowOffsetY = 12;
+
+
+            ctx.fillRect(
+                qrX,
+                qrY,
+                qrSize,
+                qrSize
+            );
+
+
+            ctx.shadowColor =
+                "transparent";
+
+            ctx.shadowBlur = 0;
+
+            ctx.shadowOffsetY = 0;
+
+
+            /* =================================================
+               DIBUJAR QR
+            ================================================== */
+
+            if (qrCanvas) {
+
+                ctx.drawImage(
+                    qrCanvas,
+                    qrX + 25,
+                    qrY + 25,
+                    qrSize - 50,
+                    qrSize - 50
+                );
+
+            } else if (qrImage) {
+
+                ctx.drawImage(
+                    qrImage,
+                    qrX + 25,
+                    qrY + 25,
+                    qrSize - 50,
+                    qrSize - 50
+                );
+
+            }
+
+
+            /* =================================================
+               TEXTO INFERIOR
+            ================================================== */
+
+            ctx.fillStyle =
+                "#ffffff";
+
+            ctx.font =
+                "700 36px Segoe UI, Arial";
+
+            ctx.fillText(
+                "ESCANEA PARA VISITAR",
+                500,
+                1110
+            );
+
+
+            ctx.fillStyle =
+                "#94a3b8";
+
+            ctx.font =
+                "400 25px Segoe UI, Arial";
+
+            ctx.fillText(
+                "Nuestro catálogo en línea",
+                500,
+                1155
+            );
+
+
+            /* =================================================
+               DESCARGA
+            ================================================== */
+
+            const enlace =
+                document.createElement("a");
+
+
+            enlace.download =
+                "Lunas-de-Octubre-QR.png";
+
+
+            enlace.href =
+                canvas.toDataURL(
+                    "image/png"
+                );
+
+
+            enlace.click();
+
+
+            document.getElementById(
+                "qrStatus"
+            ).textContent =
+                "QR descargado correctamente.";
+
+        }
+
+
+        /* =====================================================
+           TECLA ESCAPE
+        ===================================================== */
+
+        document.addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key === "Escape"
+                ) {
+
+                    cerrarQR();
+
+                }
+
+            }
+        );
+
+    </script>
+
 
 </body>
+
 </html>
