@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>Ventas | Lunas de Octubre</title>
+
+    <link
+        rel="stylesheet"
+        href="ventas.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <header class="ventas-header">
+
+        <div class="header-left">
+
+            <a
+                href="/admin.html"
+                class="btn-volver"
+            >
+                ←
+            </a>
+
+            <div>
+
+                <span class="header-kicker">
+                    LUNAS DE OCTUBRE
+                </span>
+
+                <h1>
+                    Ventas
+                </h1>
+
+            </div>
+
+        </div>
+
+        <div class="header-info">
+
+            <span id="fechaActual">
+                --
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+         ===================================================== -->
+
+    <main class="ventas-container">
+
+
+        <!-- =================================================
+             COLUMNA IZQUIERDA
+             ================================================= -->
+
+        <section class="panel productos-panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-kicker">
+                        INVENTARIO
+                    </span>
+
+                    <h2>
+                        Seleccionar productos
+                    </h2>
+
+                </div>
+
+                <span
+                    id="contadorProductos"
+                    class="contador"
+                >
+                    0 productos
+                </span>
+
+            </div>
+
+
+            <!-- BUSCADOR -->
+
+            <div class="buscador-container">
+
+                <span class="buscador-icono">
+                    🔎
+                </span>
+
+                <input
+                    type="search"
+                    id="buscarProducto"
+                    placeholder="Buscar por nombre o código..."
+                    autocomplete="off"
+                >
+
+                <button
+                    type="button"
+                    id="limpiarBusqueda"
+                    class="btn-limpiar"
+                    title="Limpiar búsqueda"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- LISTA DE PRODUCTOS -->
+
+            <div
+                id="listaProductos"
+                class="lista-productos"
+            >
+
+                <div class="estado-cargando">
+
+                    <div class="spinner"></div>
+
+                    <p>
+                        Cargando productos...
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             COLUMNA DERECHA
+             ================================================= -->
+
+        <section class="panel venta-panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-kicker">
+                        NUEVA VENTA
+                    </span>
+
+                    <h2>
+                        Detalle de venta
+                    </h2>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="vaciarCarrito"
+                    class="btn-vaciar"
+                >
+                    Vaciar
+                </button>
+
+            </div>
+
+
+            <!-- CARRITO -->
+
+            <div
+                id="carrito"
+                class="carrito"
+            >
+
+                <div class="carrito-vacio">
+
+                    <div class="carrito-icono">
+                        🛒
+                    </div>
+
+                    <h3>
+                        No hay productos
+                    </h3>
+
+                    <p>
+                        Selecciona un producto para comenzar la venta.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- RESUMEN -->
+
+            <div class="resumen-venta">
+
+                <div class="resumen-linea">
+
+                    <span>
+                        Productos
+                    </span>
+
+                    <strong id="totalUnidades">
+                        0
+                    </strong>
+
+                </div>
+
+                <div class="resumen-linea">
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                    <strong id="subtotalVenta">
+                        $0
+                    </strong>
+
+                </div>
+
+                <div class="resumen-total">
+
+                    <span>
+                        TOTAL
+                    </span>
+
+                    <strong id="totalVenta">
+                        $0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- MÉTODO DE PAGO -->
+
+            <div class="campo-venta">
+
+                <label for="metodoPago">
+                    Método de pago
+                </label>
+
+                <select id="metodoPago">
+
+                    <option value="Efectivo">
+                        Efectivo
+                    </option>
+
+                    <option value="Transferencia">
+                        Transferencia
+                    </option>
+
+                    <option value="Tarjeta">
+                        Tarjeta
+                    </option>
+
+                    <option value="Nequi">
+                        Nequi
+                    </option>
+
+                    <option value="Daviplata">
+                        Daviplata
+                    </option>
+
+                    <option value="Otro">
+                        Otro
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- OBSERVACIONES -->
+
+            <div class="campo-venta">
+
+                <label for="observaciones">
+                    Observaciones
+                </label>
+
+                <textarea
+                    id="observaciones"
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Observaciones de la venta..."
+                ></textarea>
+
+            </div>
+
+
+            <!-- BOTÓN REGISTRAR -->
+
+            <button
+                type="button"
+                id="btnRegistrarVenta"
+                class="btn-registrar"
+                disabled
+            >
+
+                <span>
+                    Registrar venta
+                </span>
+
+                <strong id="botonTotal">
+                    $0
+                </strong>
+
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         NOTIFICACIÓN
+         ===================================================== -->
+
+    <div
+        id="notificacion"
+        class="notificacion"
+    >
+
+        <div
+            id="notificacionIcono"
+            class="notificacion-icono"
+        >
+            ✓
+        </div>
+
+        <div>
+
+            <strong id="notificacionTitulo">
+                Correcto
+            </strong>
+
+            <p id="notificacionMensaje">
+                Operación realizada correctamente.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL DE CANTIDAD
+         ===================================================== -->
+
+    <div
+        id="modalCantidad"
+        class="modal-overlay"
+    >
+
+        <div class="modal">
+
+            <button
+                type="button"
+                id="cerrarModal"
+                class="modal-cerrar"
+            >
+                ×
+            </button>
+
+            <span class="modal-kicker">
+                AGREGAR PRODUCTO
+            </span>
+
+            <h2 id="modalProductoNombre">
+                Producto
+            </h2>
+
+            <p
+                id="modalProductoInfo"
+                class="modal-info"
+            >
+                Stock disponible: 0
+            </p>
+
+
+            <div class="cantidad-control">
+
+                <button
+                    type="button"
+                    id="btnRestar"
+                >
+                    −
+                </button>
+
+                <input
+                    type="number"
+                    id="cantidadProducto"
+                    min="1"
+                    value="1"
+                >
+
+                <button
+                    type="button"
+                    id="btnSumar"
+                >
+                    +
+                </button>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="btnAgregarCantidad"
+                class="btn-modal-confirmar"
+            >
+                Agregar a la venta
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script src="ventas.js"></script>
+
+</body>
+
+</html>

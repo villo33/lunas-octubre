@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>Historial de Ventas | Lunas de Octubre</title>
+
+    <link
+        rel="stylesheet"
+        href="/historial.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <header class="encabezado">
+
+        <div class="encabezado-izquierda">
+
+            <a
+                href="/admin.html"
+                class="boton-volver"
+            >
+                ←
+            </a>
+
+            <div>
+
+                <h1>
+                    Historial de Ventas
+                </h1>
+
+                <p>
+                    Consulta y administra las ventas realizadas
+                </p>
+
+            </div>
+
+        </div>
+
+        <a
+            href="/ventas.html"
+            class="boton-nueva-venta"
+        >
+            + Nueva venta
+        </a>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+         ===================================================== -->
+
+    <main class="contenedor">
+
+
+        <!-- =================================================
+             RESUMEN
+             ================================================= -->
+
+        <section class="resumen">
+
+            <article class="tarjeta-resumen">
+
+                <div class="icono-resumen">
+                    $
+                </div>
+
+                <div>
+
+                    <span>
+                        Total vendido
+                    </span>
+
+                    <strong id="totalVendido">
+                        $0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="tarjeta-resumen">
+
+                <div class="icono-resumen">
+                    #
+                </div>
+
+                <div>
+
+                    <span>
+                        Ventas realizadas
+                    </span>
+
+                    <strong id="cantidadVentas">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="tarjeta-resumen">
+
+                <div class="icono-resumen">
+                    U
+                </div>
+
+                <div>
+
+                    <span>
+                        Productos vendidos
+                    </span>
+
+                    <strong id="productosVendidos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- =================================================
+             FILTROS
+             ================================================= -->
+
+        <section class="panel-filtros">
+
+            <div class="campo-filtro">
+
+                <label for="buscarVenta">
+                    Buscar venta
+                </label>
+
+                <input
+                    type="search"
+                    id="buscarVenta"
+                    placeholder="Número de venta..."
+                >
+
+            </div>
+
+
+            <div class="campo-filtro">
+
+                <label for="fechaDesde">
+                    Desde
+                </label>
+
+                <input
+                    type="date"
+                    id="fechaDesde"
+                >
+
+            </div>
+
+
+            <div class="campo-filtro">
+
+                <label for="fechaHasta">
+                    Hasta
+                </label>
+
+                <input
+                    type="date"
+                    id="fechaHasta"
+                >
+
+            </div>
+
+
+            <div class="campo-filtro">
+
+                <label for="filtroMetodo">
+                    Método de pago
+                </label>
+
+                <select id="filtroMetodo">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    <option value="Efectivo">
+                        Efectivo
+                    </option>
+
+                    <option value="Transferencia">
+                        Transferencia
+                    </option>
+
+                    <option value="Tarjeta">
+                        Tarjeta
+                    </option>
+
+                    <option value="Nequi">
+                        Nequi
+                    </option>
+
+                    <option value="Daviplata">
+                        Daviplata
+                    </option>
+
+                    <option value="Otro">
+                        Otro
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="btnLimpiarFiltros"
+                class="boton-limpiar"
+            >
+                Limpiar filtros
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             CABECERA DE RESULTADOS
+             ================================================= -->
+
+        <section class="cabecera-resultados">
+
+            <div>
+
+                <h2>
+                    Ventas registradas
+                </h2>
+
+                <span id="contadorResultados">
+                    0 ventas
+                </span>
+
+            </div>
+
+            <button
+                type="button"
+                id="btnActualizar"
+                class="boton-actualizar"
+            >
+                Actualizar
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             LISTA DE VENTAS
+             ================================================= -->
+
+        <section
+            id="listaVentas"
+            class="lista-ventas"
+        >
+
+            <div class="estado-cargando">
+
+                <div class="spinner"></div>
+
+                <p>
+                    Cargando ventas...
+                </p>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         MODAL DETALLE DE VENTA
+         ===================================================== -->
+
+    <div
+        id="modalDetalle"
+        class="modal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-contenido">
+
+            <div class="modal-cabecera">
+
+                <div>
+
+                    <span>
+                        Detalle de
+                    </span>
+
+                    <h2 id="detalleTitulo">
+                        Venta #0
+                    </h2>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="btnCerrarModal"
+                    class="boton-cerrar"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                id="detalleVenta"
+                class="detalle-venta"
+            >
+
+                <div class="estado-cargando">
+
+                    <div class="spinner"></div>
+
+                    <p>
+                        Cargando detalle...
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         NOTIFICACIONES
+         ===================================================== -->
+
+    <div
+        id="notificacion"
+        class="notificacion"
+    >
+
+        <strong id="notificacionTitulo">
+            Información
+        </strong>
+
+        <p id="notificacionMensaje">
+            —
+        </p>
+
+    </div>
+
+
+    <script src="/historial.js"></script>
+
+</body>
+
+</html>

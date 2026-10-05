@@ -348,14 +348,47 @@
                 rgba(37, 99, 235, 0.30);
         }
 
-        .module.disabled {
-            opacity: 0.65;
+        /* =====================================================
+           BOTONES DEL MÓDULO VENTAS
+        ====================================================== */
+
+        .ventas-buttons {
+            position: relative;
+
+            z-index: 2;
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 10px;
+
+            margin-top: 22px;
         }
 
-        .module.disabled button {
-            background: #334155;
+        .ventas-buttons button {
+            margin-top: 0;
 
-            cursor: default;
+            padding: 11px 10px;
+
+            font-size: 13px;
+        }
+
+        .ventas-buttons .historial-btn {
+            color: #bae6fd;
+
+            background:
+                rgba(56, 189, 248, 0.10);
+
+            border:
+                1px solid
+                rgba(56, 189, 248, 0.22);
+        }
+
+        .ventas-buttons .historial-btn:hover {
+            background:
+                rgba(56, 189, 248, 0.18);
         }
 
         /* =====================================================
@@ -726,6 +759,10 @@
                 padding: 23px;
             }
 
+            .ventas-buttons {
+                grid-template-columns: 1fr;
+            }
+
             .qr-modal {
                 padding: 25px 18px;
             }
@@ -894,40 +931,40 @@
             </article>
 
 
-               <!-- =================================================
-                 COMPRAS — ACTIVO
-             ================================================== -->
+            <!-- =================================================
+                 COMPRAS
+            ================================================== -->
 
-             <article class="module">
+            <article class="module">
 
-             <div class="module-icon">
-            🛒
-            </div>
+                <div class="module-icon">
+                    🛒
+                </div>
 
-             <h3>
-             Compras
-             </h3>
+                <h3>
+                    Compras
+                </h3>
 
-            <p>
-             Controla las compras realizadas
-              y el ingreso de mercancía.
-           </p>
- 
-              <button
-             type="button"
-             onclick="abrirCompras()"
-             >
-           Abrir compras
-           </button>
+                <p>
+                    Controla las compras realizadas
+                    y el ingreso de mercancía.
+                </p>
 
-           </article>
+                <button
+                    type="button"
+                    onclick="abrirCompras()"
+                >
+                    Abrir compras
+                </button>
+
+            </article>
 
 
             <!-- =================================================
-                 VENTAS
+                 VENTAS — ACTIVO
             ================================================== -->
 
-            <article class="module disabled">
+            <article class="module">
 
                 <div class="module-icon">
                     💰
@@ -938,13 +975,28 @@
                 </h3>
 
                 <p>
-                    Registra ventas y consulta
-                    el movimiento comercial.
+                    Registra ventas, controla el stock
+                    y consulta el historial comercial.
                 </p>
 
-                <button>
-                    Próximamente
-                </button>
+                <div class="ventas-buttons">
+
+                    <button
+                        type="button"
+                        onclick="abrirVentas()"
+                    >
+                        Abrir ventas
+                    </button>
+
+                    <button
+                        type="button"
+                        class="historial-btn"
+                        onclick="abrirHistorial()"
+                    >
+                        Historial
+                    </button>
+
+                </div>
 
             </article>
 
@@ -1163,8 +1215,37 @@
 
         }
 
+
+        /* =====================================================
+           COMPRAS
+        ===================================================== */
+
         function abrirCompras() {
-         window.location.href = "/compras.html";
+
+            window.location.href = "/compras.html";
+
+        }
+
+
+        /* =====================================================
+           VENTAS
+        ===================================================== */
+
+        function abrirVentas() {
+
+            window.location.href = "/ventas.html";
+
+        }
+
+
+        /* =====================================================
+           HISTORIAL DE VENTAS
+        ===================================================== */
+
+        function abrirHistorial() {
+
+            window.location.href = "/historial.html";
+
         }
 
 
@@ -1220,7 +1301,6 @@
 
                         correctLevel:
                             QRCode.CorrectLevel.H
-
                     }
 
                 );
@@ -1362,6 +1442,7 @@
 
             ctx.fillStyle = fondo;
 
+
             ctx.fillRect(
                 0,
                 0,
@@ -1399,6 +1480,7 @@
 
             ctx.fillStyle = brillo1;
 
+
             ctx.fillRect(
                 0,
                 0,
@@ -1432,6 +1514,7 @@
 
             ctx.fillStyle = brillo2;
 
+
             ctx.fillRect(
                 0,
                 0,
@@ -1449,6 +1532,7 @@
 
             ctx.lineWidth = 8;
 
+
             ctx.strokeRect(
                 30,
                 30,
@@ -1463,6 +1547,7 @@
 
             ctx.beginPath();
 
+
             ctx.arc(
                 500,
                 155,
@@ -1471,13 +1556,16 @@
                 Math.PI * 2
             );
 
+
             ctx.fillStyle =
                 "#facc15";
+
 
             ctx.fill();
 
 
             ctx.beginPath();
+
 
             ctx.arc(
                 520,
@@ -1487,8 +1575,10 @@
                 Math.PI * 2
             );
 
+
             ctx.fillStyle =
                 "#020617";
+
 
             ctx.fill();
 
@@ -1499,11 +1589,14 @@
 
             ctx.textAlign = "center";
 
+
             ctx.fillStyle =
                 "#ffffff";
 
+
             ctx.font =
                 "700 58px Segoe UI, Arial";
+
 
             ctx.fillText(
                 "LUNAS DE OCTUBRE",
@@ -1515,8 +1608,10 @@
             ctx.fillStyle =
                 "#facc15";
 
+
             ctx.font =
                 "700 30px Segoe UI, Arial";
+
 
             ctx.fillText(
                 "CATÁLOGO OFICIAL",
@@ -1600,8 +1695,10 @@
             ctx.fillStyle =
                 "#ffffff";
 
+
             ctx.font =
                 "700 36px Segoe UI, Arial";
+
 
             ctx.fillText(
                 "ESCANEA PARA VISITAR",
@@ -1613,8 +1710,10 @@
             ctx.fillStyle =
                 "#94a3b8";
 
+
             ctx.font =
                 "400 25px Segoe UI, Arial";
+
 
             ctx.fillText(
                 "Nuestro catálogo en línea",

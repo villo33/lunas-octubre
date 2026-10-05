@@ -2072,6 +2072,954 @@ app.post(
 );
 
 
+
+/* =========================================================
+   VENTAS
+   ========================================================= */
+
+
+/* =========================================================
+   OBTENER TODAS LAS VENTAS
+   ========================================================= */
+
+app.get(
+    "/api/ventas",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        v.id,
+                        v.fecha,
+                        v.total,
+                        v.metodo_pago,
+                        v.observaciones,
+                        v.created_at,
+
+                        COUNT(dv.id)::INTEGER
+                            AS cantidad_productos
+
+                    FROM ventas v
+
+                    LEFT JOIN detalle_ventas dv
+                        ON dv.venta_id =
+                        v.id
+
+                    GROUP BY
+                        v.id,
+                        v.fecha,
+                        v.total,
+                        v.metodo_pago,
+                        v.observaciones,
+                        v.created_at
+
+                    ORDER BY
+                        v.fecha DESC,
+                        v.id DESC
+                    `
+                );
+
+            res.json(
+                resultado.rows
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo ventas:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo ventas."
+            });
+        }
+    }
+);
+
+
+/* =========================================================
+   OBTENER UNA VENTA CON SUS DETALLES
+   ========================================================= */
+
+app.get(
+    "/api/ventas/:id",
+    async (req, res) => {
+
+        try {
+
+            const {
+                id
+            } = req.params;
+
+
+            /* -------------------------------------------------
+               CABECERA DE LA VENTA
+               ------------------------------------------------- */
+
+            const ventaResultado =
+                await pool.query(
+                    `
+                    SELECT
+                        v.id,
+                        v.fecha,
+                        v.total,
+                        v.metodo_pago,
+                        v.observaciones,
+                        v.created_at
+
+                    FROM ventas v
+
+                    WHERE v.id = $1
+                    `,
+                    [
+                        id
+                    ]
+                );
+
+
+            if (
+                ventaResultado.rows.length === 0
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Venta no encontrada."
+                });
+            }
+
+
+            /* -------------------------------------------------
+               DETALLES DE LA VENTA
+               ------------------------------------------------- */
+
+            const detallesResultado =
+                await pool.query(
+                    `
+                    SELECT
+                        dv.id,
+                        dv.venta_id,
+                        dv.producto_id,
+
+                        p.nombre AS producto,
+                        p.codigo,
+
+                        dv.cantidad,
+                        dv.precio_venta,
+                        dv.costo_unitario,
+                        dv.subtotal,
+                        dv.ganancia
+
+                    FROM detalle_ventas dv
+
+                    INNER JOIN productos_lunas p
+                        ON p.id =
+                        dv.producto_id
+
+                    WHERE dv.venta_id = $1
+
+                    ORDER BY
+                        dv.id ASC
+                    `,
+                    [
+                        id
+                    ]
+                );
+
+
+            res.json({
+
+                venta:
+                    ventaResultado.rows[0],
+
+                detalles:
+                    detallesResultado.rows
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo detalle de venta:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo detalle de venta."
+            });
+        }
+    }
+);
+
+
+/* =========================================================
+   REGISTRAR VENTA
+   ========================================================= */
+
+app.post(
+    "/api/ventas",
+    async (req, res) => {
+
+        const client =
+            await pool.connect();
+
+        try {
+
+            const {
+                metodo_pago,
+                observaciones,
+                detalles
+            } = req.body;
+
+
+            /* -------------------------------------------------
+               VALIDAR PRODUCTOS
+               ------------------------------------------------- */
+
+            if (
+                !Array.isArray(
+                    detalles
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "La venta debe contener productos."
+                });
+            }
+
+
+            if (
+                detalles.length === 0
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Debes agregar al menos un producto."
+                });
+            }
+
+
+            /* -------------------------------------------------
+               NORMALIZAR Y VALIDAR DETALLES
+               ------------------------------------------------- */
+
+            const productosMap =
+                new Map();
+
+
+            for (
+                const detalle
+                of detalles
+            ) {
+
+                const productoId =
+                    Number(
+                        detalle.producto_id
+                    );
+
+                const cantidad =
+                    Number(
+                        detalle.cantidad
+                    );
+
+
+                if (
+                    !Number.isInteger(
+                        productoId
+                    ) ||
+                    productoId <= 0
+                ) {
+
+                    return res.status(400).json({
+                        error:
+                            "Uno de los productos seleccionados no es válido."
+                    });
+                }
+
+
+                if (
+                    !Number.isInteger(
+                        cantidad
+                    ) ||
+                    cantidad <= 0
+                ) {
+
+                    return res.status(400).json({
+                        error:
+                            "La cantidad debe ser un número entero mayor que cero."
+                    });
+                }
+
+
+                /* ---------------------------------------------
+                   SI EL MISMO PRODUCTO APARECE DOS VECES,
+                   SUMAMOS LAS CANTIDADES
+                   --------------------------------------------- */
+
+                if (
+                    productosMap.has(
+                        productoId
+                    )
+                ) {
+
+                    productosMap.set(
+                        productoId,
+
+                        productosMap.get(
+                            productoId
+                        ) + cantidad
+                    );
+
+                } else {
+
+                    productosMap.set(
+                        productoId,
+                        cantidad
+                    );
+                }
+            }
+
+
+            const productosVenta =
+                Array.from(
+                    productosMap.entries()
+                ).map(
+                    (
+                        [
+                            producto_id,
+                            cantidad
+                        ]
+                    ) => ({
+                        producto_id,
+                        cantidad
+                    })
+                );
+
+
+            /* -------------------------------------------------
+               INICIAR TRANSACCIÓN
+               ------------------------------------------------- */
+
+            await client.query(
+                "BEGIN"
+            );
+
+
+            /* -------------------------------------------------
+               CREAR CABECERA DE LA VENTA
+               ------------------------------------------------- */
+
+            const ventaResultado =
+                await client.query(
+                    `
+                    INSERT INTO ventas
+                    (
+                        metodo_pago,
+                        observaciones
+                    )
+                    VALUES
+                    (
+                        $1,
+                        $2
+                    )
+                    RETURNING
+                        id,
+                        fecha,
+                        total,
+                        metodo_pago,
+                        observaciones,
+                        created_at
+                    `,
+                    [
+                        metodo_pago
+                            ? String(
+                                metodo_pago
+                            ).trim()
+                            : "Efectivo",
+
+                        observaciones
+                            ? String(
+                                observaciones
+                            ).trim()
+                            : null
+                    ]
+                );
+
+
+            const venta =
+                ventaResultado.rows[0];
+
+
+            let totalVenta = 0;
+
+            const detallesGuardados =
+                [];
+
+
+            /* -------------------------------------------------
+               PROCESAR CADA PRODUCTO
+               ------------------------------------------------- */
+
+            for (
+                const item
+                of productosVenta
+            ) {
+
+                /* ---------------------------------------------
+                   BLOQUEAR PRODUCTO
+                   --------------------------------------------- */
+
+                const productoResultado =
+                    await client.query(
+                        `
+                        SELECT
+                            id,
+                            nombre,
+                            codigo,
+                            cantidad,
+                            precio_venta,
+                            precio_compra,
+                            activo
+
+                        FROM productos_lunas
+
+                        WHERE id = $1
+
+                        FOR UPDATE
+                        `,
+                        [
+                            item.producto_id
+                        ]
+                    );
+
+
+                if (
+                    productoResultado.rows.length === 0
+                ) {
+
+                    throw new Error(
+                        `El producto con ID ${item.producto_id} no existe.`
+                    );
+                }
+
+
+                const producto =
+                    productoResultado.rows[0];
+
+
+                /* ---------------------------------------------
+                   VERIFICAR PRODUCTO ACTIVO
+                   --------------------------------------------- */
+
+                if (
+                    !producto.activo
+                ) {
+
+                    throw new Error(
+                        `El producto "${producto.nombre}" está inactivo.`
+                    );
+                }
+
+
+                /* ---------------------------------------------
+                   VERIFICAR STOCK
+                   --------------------------------------------- */
+
+                const stockActual =
+                    Number(
+                        producto.cantidad
+                    );
+
+                const cantidadSolicitada =
+                    Number(
+                        item.cantidad
+                    );
+
+
+                if (
+                    cantidadSolicitada >
+                    stockActual
+                ) {
+
+                    throw new Error(
+                        `Stock insuficiente para "${producto.nombre}". Disponible: ${stockActual}. Solicitado: ${cantidadSolicitada}.`
+                    );
+                }
+
+
+                /* ---------------------------------------------
+                   PRECIOS DESDE LA BASE DE DATOS
+                   --------------------------------------------- */
+
+                const precioVenta =
+                    Number(
+                        producto.precio_venta
+                    );
+
+                const costoUnitario =
+                    Number(
+                        producto.precio_compra ||
+                        0
+                    );
+
+
+                const subtotal =
+                    precioVenta *
+                    cantidadSolicitada;
+
+
+                const ganancia =
+                    (
+                        precioVenta -
+                        costoUnitario
+                    ) *
+                    cantidadSolicitada;
+
+
+                /* ---------------------------------------------
+                   GUARDAR DETALLE DE VENTA
+                   --------------------------------------------- */
+
+                const detalleResultado =
+                    await client.query(
+                        `
+                        INSERT INTO detalle_ventas
+                        (
+                            venta_id,
+                            producto_id,
+                            cantidad,
+                            precio_venta,
+                            costo_unitario,
+                            subtotal,
+                            ganancia
+                        )
+                        VALUES
+                        (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7
+                        )
+                        RETURNING *
+                        `,
+                        [
+                            venta.id,
+                            producto.id,
+                            cantidadSolicitada,
+                            precioVenta,
+                            costoUnitario,
+                            subtotal,
+                            ganancia
+                        ]
+                    );
+
+
+                detallesGuardados.push({
+
+                    ...detalleResultado.rows[0],
+
+                    producto:
+                        producto.nombre,
+
+                    codigo:
+                        producto.codigo
+                });
+
+
+                /* ---------------------------------------------
+                   DESCONTAR STOCK
+                   --------------------------------------------- */
+
+                const stockResultado =
+                    await client.query(
+                        `
+                        UPDATE productos_lunas
+
+                        SET
+                            cantidad =
+                                cantidad - $1,
+
+                            updated_at =
+                                NOW()
+
+                        WHERE
+                            id = $2
+
+                            AND cantidad >= $1
+
+                        RETURNING
+                            id,
+                            nombre,
+                            cantidad
+                        `,
+                        [
+                            cantidadSolicitada,
+                            producto.id
+                        ]
+                    );
+
+
+                if (
+                    stockResultado.rows.length === 0
+                ) {
+
+                    throw new Error(
+                        `No fue posible actualizar el stock de "${producto.nombre}".`
+                    );
+                }
+
+
+                /* ---------------------------------------------
+                   MOVIMIENTO DE INVENTARIO
+                   --------------------------------------------- */
+
+                await client.query(
+                    `
+                    INSERT INTO movimientos_inventario
+                    (
+                        producto_id,
+                        tipo,
+                        cantidad,
+                        motivo,
+                        referencia_tipo,
+                        referencia_id
+                    )
+                    VALUES
+                    (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
+                    `,
+                    [
+                        producto.id,
+
+                        "VENTA",
+
+                        cantidadSolicitada,
+
+                        "Salida de inventario por venta",
+
+                        "VENTA",
+
+                        venta.id
+                    ]
+                );
+
+
+                /* ---------------------------------------------
+                   ACUMULAR TOTAL
+                   --------------------------------------------- */
+
+                totalVenta +=
+                    subtotal;
+            }
+
+
+            /* -------------------------------------------------
+               ACTUALIZAR TOTAL
+               ------------------------------------------------- */
+
+            const ventaActualizada =
+                await client.query(
+                    `
+                    UPDATE ventas
+
+                    SET
+                        total = $1
+
+                    WHERE id = $2
+
+                    RETURNING
+                        id,
+                        fecha,
+                        total,
+                        metodo_pago,
+                        observaciones,
+                        created_at
+                    `,
+                    [
+                        totalVenta,
+                        venta.id
+                    ]
+                );
+
+
+            /* -------------------------------------------------
+               CONFIRMAR TRANSACCIÓN
+               ------------------------------------------------- */
+
+            await client.query(
+                "COMMIT"
+            );
+
+
+            /* -------------------------------------------------
+               CONSOLA
+               ------------------------------------------------- */
+
+            console.log("");
+
+            console.log(
+                "========================================"
+            );
+
+            console.log(
+                "💰 VENTA REGISTRADA"
+            );
+
+            console.log(
+                "========================================"
+            );
+
+            console.log(
+                "ID:",
+                venta.id
+            );
+
+            console.log(
+                "Total:",
+                totalVenta
+            );
+
+            console.log(
+                "Productos:",
+                productosVenta.length
+            );
+
+            console.log(
+                "========================================"
+            );
+
+            console.log("");
+
+
+            /* -------------------------------------------------
+               RESPUESTA
+               ------------------------------------------------- */
+
+            res.status(201).json({
+
+                mensaje:
+                    "Venta registrada correctamente.",
+
+                venta: {
+                    ...ventaActualizada.rows[0],
+
+                    total:
+                        Number(
+                            totalVenta
+                        )
+                },
+
+                detalles:
+                    detallesGuardados
+            });
+
+
+        } catch (error) {
+
+
+            /* -------------------------------------------------
+               ROLLBACK
+               ------------------------------------------------- */
+
+            try {
+
+                await client.query(
+                    "ROLLBACK"
+                );
+
+            } catch (
+                rollbackError
+            ) {
+
+                console.error(
+                    "❌ Error haciendo ROLLBACK:",
+                    rollbackError
+                );
+            }
+
+
+            /* -------------------------------------------------
+               MOSTRAR ERROR
+               ------------------------------------------------- */
+
+            console.error("");
+
+            console.error(
+                "========================================"
+            );
+
+            console.error(
+                "❌ ERROR REGISTRANDO VENTA"
+            );
+
+            console.error(
+                "========================================"
+            );
+
+            console.error(
+                "Mensaje:",
+                error.message
+            );
+
+            console.error(
+                "Código:",
+                error.code
+            );
+
+            console.error(
+                "Detalle:",
+                error.detail
+            );
+
+            console.error(
+                "Hint:",
+                error.hint
+            );
+
+            console.error(
+                "Error completo:",
+                error
+            );
+
+            console.error(
+                "========================================"
+            );
+
+
+            /* -------------------------------------------------
+               ERRORES CONTROLADOS
+               ------------------------------------------------- */
+
+            if (
+                error.message &&
+                (
+                    error.message.includes(
+                        "Stock insuficiente"
+                    ) ||
+
+                    error.message.includes(
+                        "no existe"
+                    ) ||
+
+                    error.message.includes(
+                        "está inactivo"
+                    ) ||
+
+                    error.message.includes(
+                        "No fue posible actualizar"
+                    )
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        error.message
+                });
+            }
+
+
+            /* -------------------------------------------------
+               ERROR CLAVE FORÁNEA
+               ------------------------------------------------- */
+
+            if (
+                error.code === "23503"
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "El producto seleccionado no existe."
+                });
+            }
+
+
+            /* -------------------------------------------------
+               ERROR CAMPO OBLIGATORIO
+               ------------------------------------------------- */
+
+            if (
+                error.code === "23502"
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        error.column
+                            ? `El campo "${error.column}" es obligatorio.`
+                            : "Falta un campo obligatorio."
+                });
+            }
+
+
+            /* -------------------------------------------------
+               ERROR FORMATO
+               ------------------------------------------------- */
+
+            if (
+                error.code === "22P02"
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Uno de los datos enviados tiene un formato incorrecto."
+                });
+            }
+
+
+            /* -------------------------------------------------
+               ERROR GENERAL
+               ------------------------------------------------- */
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error registrando venta."
+            });
+
+
+        } finally {
+
+            client.release();
+        }
+    }
+);
+
+
+/* =========================================================
+   RUTAS HTML
+   ========================================================= */
+
+app.get(
+    "/",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "login.html"
+            )
+        );
+    }
+);
+
+
 /* =========================================================
    RUTAS HTML
    ========================================================= */
