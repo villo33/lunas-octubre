@@ -134,16 +134,17 @@ const upload = multer({
    FUNCIONES DE AUTENTICACIÓN
    ========================================================= */
 
-/*
-   Leer cookies manualmente.
+const SESSION_COOKIE = "lunas_session";
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas
 
-   No necesitamos instalar cookie-parser.
-*/
+
+/* =========================================================
+   LEER COOKIES
+   ========================================================= */
 
 function obtenerCookies(req) {
 
-    const header =
-        req.headers.cookie;
+    const header = req.headers.cookie;
 
     if (!header) {
         return {};
@@ -164,10 +165,19 @@ function obtenerCookies(req) {
                     partes.join("=");
 
                 if (nombre) {
-                    cookies[nombre] =
-                        decodeURIComponent(
-                            valor || ""
-                        );
+
+                    try {
+
+                        cookies[nombre] =
+                            decodeURIComponent(
+                                valor || ""
+                            );
+
+                    } catch (error) {
+
+                        cookies[nombre] =
+                            valor || "";
+                    }
                 }
 
                 return cookies;
@@ -177,197 +187,331 @@ function obtenerCookies(req) {
 }
 
 
-/*
-   Crear identificador de sesión.
+/* =========================================================
+   CREAR TOKEN DE SESIÓN
+   ========================================================= */
 
-   AUTH_SECRET participa en la generación
-   del token para que la sesión no sea
-   simplemente un valor predecible.
-*/
+function crearTokenSesion(usuario) {
 
-function crearTokenSesion() {
+    const payload = JSON.stringify({
 
-    const aleatorio =
-        crypto.randomBytes(32).toString("hex");
+        usuario,
 
-    const timestamp =
-        Date.now().toString();
+        exp:
+            Date.now() +
+            SESSION_DURATION
+    });
 
-    const base =
-        `${aleatorio}.${timestamp}`;
+
+    const contenido =
+        Buffer
+            .from(payload)
+            .toString("base64url");
+
 
     const firma =
         crypto
             .createHmac(
                 "sha256",
-                AUTH_SECRET || "missing-auth-secret"
+                AUTH_SECRET
             )
-            .update(base)
-            .digest("hex");
+            .update(contenido)
+            .digest("base64url");
 
-    return `${base}.${firma}`;
+
+    return `${contenido}.${firma}`;
 }
 
 
-/*
-   Comparación segura de valores.
+/* =========================================================
+   VERIFICAR TOKEN DE SESIÓN
+   ========================================================= */
 
-   Evita comparar directamente strings
-   cuando sea posible.
-*/
+function verificarTokenSesion(token) {
 
-function compararSeguramente(
-    valorA,
-    valorB
-) {
+    try {
 
-    if (
-        typeof valorA !== "string" ||
-        typeof valorB !== "string"
-    ) {
-        return false;
-    }
+        if (
+            !token ||
+            !AUTH_SECRET
+        ) {
 
-    const bufferA =
-        Buffer.from(
-            valorA,
-            "utf8"
+            return null;
+        }
+
+
+        const partes =
+            token.split(".");
+
+
+        if (
+            partes.length !== 2
+        ) {
+
+            return null;
+        }
+
+
+        const [
+            contenido,
+            firmaRecibida
+        ] = partes;
+
+
+        const firmaEsperada =
+            crypto
+                .createHmac(
+                    "sha256",
+                    AUTH_SECRET
+                )
+                .update(contenido)
+                .digest("base64url");
+
+
+        const bufferRecibido =
+            Buffer.from(
+                firmaRecibida,
+                "utf8"
+            );
+
+
+        const bufferEsperado =
+            Buffer.from(
+                firmaEsperada,
+                "utf8"
+            );
+
+
+        if (
+            bufferRecibido.length !==
+            bufferEsperado.length
+        ) {
+
+            return null;
+        }
+
+
+        if (
+            !crypto.timingSafeEqual(
+                bufferRecibido,
+                bufferEsperado
+            )
+        ) {
+
+            return null;
+        }
+
+
+        const payload =
+            JSON.parse(
+                Buffer
+                    .from(
+                        contenido,
+                        "base64url"
+                    )
+                    .toString("utf8")
+            );
+
+
+        if (
+            !payload.usuario ||
+            !payload.exp
+        ) {
+
+            return null;
+        }
+
+
+        if (
+            Date.now() >
+            Number(payload.exp)
+        ) {
+
+            return null;
+        }
+
+
+        return {
+
+            usuario:
+                payload.usuario,
+
+            expiresAt:
+                Number(payload.exp)
+        };
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error verificando sesión:",
+            error.message
         );
 
-    const bufferB =
-        Buffer.from(
-            valorB,
-            "utf8"
-        );
-
-    if (
-        bufferA.length !==
-        bufferB.length
-    ) {
-        return false;
+        return null;
     }
-
-    return crypto.timingSafeEqual(
-        bufferA,
-        bufferB
-    );
 }
 
 
-/*
-   Obtener sesión actual.
-*/
+/* =========================================================
+   OBTENER SESIÓN ACTUAL
+   ========================================================= */
 
 function obtenerSesion(req) {
 
     const cookies =
         obtenerCookies(req);
 
+
     const token =
         cookies[SESSION_COOKIE];
 
+
     if (!token) {
+
         return null;
     }
+
 
     const sesion =
-        sesiones.get(token);
+        verificarTokenSesion(
+            token
+        );
+
 
     if (!sesion) {
-        return null;
-    }
-
-    if (
-        Date.now() >
-        sesion.expiresAt
-    ) {
-
-        sesiones.delete(token);
 
         return null;
     }
+
 
     return {
+
         token,
+
         ...sesion
     };
 }
 
 
-/*
-   Crear cookie de sesión.
-
-   HttpOnly:
-   JavaScript del navegador no puede
-   leer la cookie.
-
-   SameSite=Lax:
-   ayuda a reducir ataques CSRF.
-
-   Secure:
-   se activa en producción cuando
-   Render está utilizando HTTPS.
-*/
+/* =========================================================
+   ESTABLECER COOKIE DE SESIÓN
+   ========================================================= */
 
 function establecerCookieSesion(
+    req,
     res,
     token
 ) {
 
-    const secure =
-        process.env.NODE_ENV === "production";
+    /*
+       Render trabaja mediante HTTPS.
 
-    const cookie =
-        [
-            `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
+       Detectamos HTTPS directamente
+       usando req.secure y el header
+       X-Forwarded-Proto.
+    */
 
-            "HttpOnly",
+    const protocolo =
+        String(
+            req.headers[
+                "x-forwarded-proto"
+            ] || ""
+        )
+            .split(",")[0]
+            .trim();
 
-            "Path=/",
 
-            "SameSite=Lax",
+    const esHttps =
+        req.secure ||
+        protocolo === "https";
 
-            `Max-Age=${Math.floor(
-                SESSION_DURATION / 1000
-            )}`,
 
-            secure
-                ? "Secure"
-                : ""
-        ]
-            .filter(Boolean)
-            .join("; ");
+    const cookie = [
+
+        `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
+
+        "HttpOnly",
+
+        "Path=/",
+
+        "SameSite=Lax",
+
+        `Max-Age=${Math.floor(
+            SESSION_DURATION / 1000
+        )}`,
+
+        esHttps
+            ? "Secure"
+            : ""
+
+    ]
+        .filter(Boolean)
+        .join("; ");
+
 
     res.setHeader(
         "Set-Cookie",
         cookie
     );
+
+
+    console.log(
+        "🍪 Cookie de sesión establecida."
+    );
+
+    console.log(
+        "🔐 HTTPS detectado:",
+        esHttps
+    );
 }
 
 
-/*
-   Eliminar cookie de sesión.
-*/
+/* =========================================================
+   ELIMINAR COOKIE DE SESIÓN
+   ========================================================= */
 
-function eliminarCookieSesion(res) {
+function eliminarCookieSesion(
+    req,
+    res
+) {
 
-    const secure =
-        process.env.NODE_ENV === "production";
+    const protocolo =
+        String(
+            req.headers[
+                "x-forwarded-proto"
+            ] || ""
+        )
+            .split(",")[0]
+            .trim();
 
-    const cookie =
-        [
-            `${SESSION_COOKIE}=`,
-            "HttpOnly",
-            "Path=/",
-            "SameSite=Lax",
-            "Max-Age=0",
-            "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
-            secure
-                ? "Secure"
-                : ""
-        ]
-            .filter(Boolean)
-            .join("; ");
+
+    const esHttps =
+        req.secure ||
+        protocolo === "https";
+
+
+    const cookie = [
+
+        `${SESSION_COOKIE}=`,
+
+        "HttpOnly",
+
+        "Path=/",
+
+        "SameSite=Lax",
+
+        "Max-Age=0",
+
+        "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+
+        esHttps
+            ? "Secure"
+            : ""
+
+    ]
+        .filter(Boolean)
+        .join("; ");
+
 
     res.setHeader(
         "Set-Cookie",
@@ -389,35 +533,51 @@ function requireAuth(
     const sesion =
         obtenerSesion(req);
 
-    if (!sesion) {
 
-        /*
-           Para peticiones API devolvemos
-           401 en lugar de redireccionar.
-        */
+    if (!sesion) {
 
         if (
             req.path.startsWith("/api/")
         ) {
 
             return res.status(401).json({
+
                 error:
                     "Sesión no válida o expirada."
             });
         }
 
-        /*
-           Para páginas HTML enviamos
-           al login.
-        */
 
         return res.redirect(
             "/login.html"
         );
     }
 
+
+    /*
+       Comprobamos además que el usuario
+       de la sesión siga correspondiendo
+       al administrador configurado.
+    */
+
+    if (
+        !compararSeguramente(
+            sesion.usuario,
+            ADMIN_USER
+        )
+    ) {
+
+        return res.status(401).json({
+
+            error:
+                "Sesión no autorizada."
+        });
+    }
+
+
     req.sesion =
         sesion;
+
 
     next();
 }
@@ -428,11 +588,9 @@ function requireAuth(
    ========================================================= */
 
 
-/*
+/* =========================================================
    POST /api/auth/login
-
-   Iniciar sesión.
-*/
+   ========================================================= */
 
 app.post(
     "/api/auth/login",
@@ -445,6 +603,7 @@ app.post(
                 password
             } = req.body;
 
+
             if (
                 !ADMIN_USER ||
                 !ADMIN_PASSWORD ||
@@ -455,11 +614,14 @@ app.post(
                     "❌ Autenticación no disponible: faltan variables de entorno."
                 );
 
+
                 return res.status(500).json({
+
                     error:
                         "El sistema de autenticación no está configurado correctamente en el servidor."
                 });
             }
+
 
             if (
                 typeof usuario !== "string" ||
@@ -467,10 +629,12 @@ app.post(
             ) {
 
                 return res.status(400).json({
+
                     error:
                         "Usuario y contraseña son obligatorios."
                 });
             }
+
 
             const usuarioCorrecto =
                 compararSeguramente(
@@ -478,11 +642,13 @@ app.post(
                     ADMIN_USER
                 );
 
+
             const passwordCorrecta =
                 compararSeguramente(
                     password,
                     ADMIN_PASSWORD
                 );
+
 
             if (
                 !usuarioCorrecto ||
@@ -493,44 +659,66 @@ app.post(
                     "⚠️ Intento de acceso rechazado."
                 );
 
+
                 return res.status(401).json({
+
                     error:
                         "Usuario o contraseña incorrectos."
                 });
             }
 
+
+            /*
+               Creamos una sesión firmada.
+
+               Ya NO depende de un Map en memoria.
+            */
+
             const token =
-                crearTokenSesion();
+                crearTokenSesion(
+                    ADMIN_USER
+                );
 
-            const expiresAt =
-                Date.now() +
-                SESSION_DURATION;
-
-            sesiones.set(
-                token,
-                {
-                    usuario:
-                        ADMIN_USER,
-
-                    createdAt:
-                        Date.now(),
-
-                    expiresAt
-                }
-            );
 
             establecerCookieSesion(
+                req,
                 res,
                 token
             );
 
+
+            console.log("");
             console.log(
-                "✅ Inicio de sesión correcto:",
+                "========================================"
+            );
+            console.log(
+                "✅ INICIO DE SESIÓN CORRECTO"
+            );
+            console.log(
+                "========================================"
+            );
+            console.log(
+                "👤 Usuario:",
                 ADMIN_USER
             );
+            console.log(
+                "🍪 Cookie:",
+                SESSION_COOKIE
+            );
+            console.log(
+                "🔐 Sesión válida durante:",
+                "8 horas"
+            );
+            console.log(
+                "========================================"
+            );
+            console.log("");
+
 
             return res.json({
+
                 ok: true,
+
                 mensaje:
                     "Inicio de sesión correcto."
             });
@@ -542,7 +730,9 @@ app.post(
                 error
             );
 
+
             return res.status(500).json({
+
                 error:
                     "No fue posible iniciar sesión."
             });
@@ -551,11 +741,9 @@ app.post(
 );
 
 
-/*
+/* =========================================================
    GET /api/auth/me
-
-   Comprobar sesión actual.
-*/
+   ========================================================= */
 
 app.get(
     "/api/auth/me",
@@ -564,17 +752,37 @@ app.get(
         const sesion =
             obtenerSesion(req);
 
+
         if (!sesion) {
 
             return res.status(401).json({
+
                 autenticado: false
             });
         }
 
+
+        if (
+            !compararSeguramente(
+                sesion.usuario,
+                ADMIN_USER
+            )
+        ) {
+
+            return res.status(401).json({
+
+                autenticado: false
+            });
+        }
+
+
         return res.json({
+
             autenticado: true,
+
             usuario:
                 sesion.usuario,
+
             expiresAt:
                 sesion.expiresAt
         });
@@ -582,45 +790,34 @@ app.get(
 );
 
 
-/*
+/* =========================================================
    POST /api/auth/logout
-
-   Cerrar sesión.
-*/
+   ========================================================= */
 
 app.post(
     "/api/auth/logout",
     (req, res) => {
 
-        const cookies =
-            obtenerCookies(req);
-
-        const token =
-            cookies[SESSION_COOKIE];
-
-        if (token) {
-
-            sesiones.delete(
-                token
-            );
-        }
-
         eliminarCookieSesion(
+            req,
             res
         );
+
 
         console.log(
             "🔒 Sesión cerrada."
         );
 
+
         return res.json({
+
             ok: true,
+
             mensaje:
                 "Sesión cerrada correctamente."
         });
     }
 );
-
 
 /* =========================================================
    FUNCIÓN PARA SUBIR IMAGEN A CLOUDINARY
