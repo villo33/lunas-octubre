@@ -22,8 +22,6 @@ const AUTH_SECRET = process.env.AUTH_SECRET;
 const SESSION_COOKIE = "lunas_session";
 const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas
 
-const sesiones = new Map();
-
 /* =========================================================
    VERIFICAR CONFIGURACIÓN DE SEGURIDAD
    ========================================================= */
@@ -49,6 +47,8 @@ if (!AUTH_SECRET) {
 /* =========================================================
    CONFIGURACIÓN GENERAL
    ========================================================= */
+
+app.set("trust proxy", 1);
 
 app.use(cors());
 
@@ -134,16 +134,41 @@ const upload = multer({
    FUNCIONES DE AUTENTICACIÓN
    ========================================================= */
 
-const SESSION_COOKIE = "lunas_session";
-const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas
+/*
+   Comparación segura de valores sensibles.
 
+   Se utiliza SHA-256 antes de timingSafeEqual para que
+   ambos buffers tengan siempre la misma longitud.
+*/
+function compararSeguramente(valorA, valorB) {
+    if (
+        typeof valorA !== "string" ||
+        typeof valorB !== "string"
+    ) {
+        return false;
+    }
+
+    const hashA = crypto
+        .createHash("sha256")
+        .update(valorA, "utf8")
+        .digest();
+
+    const hashB = crypto
+        .createHash("sha256")
+        .update(valorB, "utf8")
+        .digest();
+
+    return crypto.timingSafeEqual(
+        hashA,
+        hashB
+    );
+}
 
 /* =========================================================
    LEER COOKIES
    ========================================================= */
 
 function obtenerCookies(req) {
-
     const header = req.headers.cookie;
 
     if (!header) {
@@ -154,7 +179,6 @@ function obtenerCookies(req) {
         .split(";")
         .reduce(
             (cookies, item) => {
-
                 const partes =
                     item.trim().split("=");
 
@@ -165,16 +189,12 @@ function obtenerCookies(req) {
                     partes.join("=");
 
                 if (nombre) {
-
                     try {
-
                         cookies[nombre] =
                             decodeURIComponent(
                                 valor || ""
                             );
-
                     } catch (error) {
-
                         cookies[nombre] =
                             valor || "";
                     }
@@ -186,15 +206,12 @@ function obtenerCookies(req) {
         );
 }
 
-
 /* =========================================================
    CREAR TOKEN DE SESIÓN
    ========================================================= */
 
 function crearTokenSesion(usuario) {
-
     const payload = JSON.stringify({
-
         usuario,
 
         exp:
@@ -202,12 +219,10 @@ function crearTokenSesion(usuario) {
             SESSION_DURATION
     });
 
-
     const contenido =
         Buffer
             .from(payload)
             .toString("base64url");
-
 
     const firma =
         crypto
@@ -218,45 +233,35 @@ function crearTokenSesion(usuario) {
             .update(contenido)
             .digest("base64url");
 
-
     return `${contenido}.${firma}`;
 }
-
 
 /* =========================================================
    VERIFICAR TOKEN DE SESIÓN
    ========================================================= */
 
 function verificarTokenSesion(token) {
-
     try {
-
         if (
             !token ||
             !AUTH_SECRET
         ) {
-
             return null;
         }
-
 
         const partes =
             token.split(".");
 
-
         if (
             partes.length !== 2
         ) {
-
             return null;
         }
-
 
         const [
             contenido,
             firmaRecibida
         ] = partes;
-
 
         const firmaEsperada =
             crypto
@@ -267,13 +272,11 @@ function verificarTokenSesion(token) {
                 .update(contenido)
                 .digest("base64url");
 
-
         const bufferRecibido =
             Buffer.from(
                 firmaRecibida,
                 "utf8"
             );
-
 
         const bufferEsperado =
             Buffer.from(
@@ -281,15 +284,12 @@ function verificarTokenSesion(token) {
                 "utf8"
             );
 
-
         if (
             bufferRecibido.length !==
             bufferEsperado.length
         ) {
-
             return null;
         }
-
 
         if (
             !crypto.timingSafeEqual(
@@ -297,10 +297,8 @@ function verificarTokenSesion(token) {
                 bufferEsperado
             )
         ) {
-
             return null;
         }
-
 
         const payload =
             JSON.parse(
@@ -312,27 +310,21 @@ function verificarTokenSesion(token) {
                     .toString("utf8")
             );
 
-
         if (
             !payload.usuario ||
             !payload.exp
         ) {
-
             return null;
         }
-
 
         if (
             Date.now() >
             Number(payload.exp)
         ) {
-
             return null;
         }
 
-
         return {
-
             usuario:
                 payload.usuario,
 
@@ -341,7 +333,6 @@ function verificarTokenSesion(token) {
         };
 
     } catch (error) {
-
         console.error(
             "❌ Error verificando sesión:",
             error.message
@@ -351,47 +342,35 @@ function verificarTokenSesion(token) {
     }
 }
 
-
 /* =========================================================
    OBTENER SESIÓN ACTUAL
    ========================================================= */
 
 function obtenerSesion(req) {
-
     const cookies =
         obtenerCookies(req);
-
 
     const token =
         cookies[SESSION_COOKIE];
 
-
     if (!token) {
-
         return null;
     }
-
 
     const sesion =
         verificarTokenSesion(
             token
         );
 
-
     if (!sesion) {
-
         return null;
     }
 
-
     return {
-
         token,
-
         ...sesion
     };
 }
-
 
 /* =========================================================
    ESTABLECER COOKIE DE SESIÓN
@@ -402,15 +381,6 @@ function establecerCookieSesion(
     res,
     token
 ) {
-
-    /*
-       Render trabaja mediante HTTPS.
-
-       Detectamos HTTPS directamente
-       usando req.secure y el header
-       X-Forwarded-Proto.
-    */
-
     const protocolo =
         String(
             req.headers[
@@ -420,14 +390,11 @@ function establecerCookieSesion(
             .split(",")[0]
             .trim();
 
-
     const esHttps =
         req.secure ||
         protocolo === "https";
 
-
     const cookie = [
-
         `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
 
         "HttpOnly",
@@ -443,17 +410,14 @@ function establecerCookieSesion(
         esHttps
             ? "Secure"
             : ""
-
     ]
         .filter(Boolean)
         .join("; ");
-
 
     res.setHeader(
         "Set-Cookie",
         cookie
     );
-
 
     console.log(
         "🍪 Cookie de sesión establecida."
@@ -465,7 +429,6 @@ function establecerCookieSesion(
     );
 }
 
-
 /* =========================================================
    ELIMINAR COOKIE DE SESIÓN
    ========================================================= */
@@ -474,7 +437,6 @@ function eliminarCookieSesion(
     req,
     res
 ) {
-
     const protocolo =
         String(
             req.headers[
@@ -484,14 +446,11 @@ function eliminarCookieSesion(
             .split(",")[0]
             .trim();
 
-
     const esHttps =
         req.secure ||
         protocolo === "https";
 
-
     const cookie = [
-
         `${SESSION_COOKIE}=`,
 
         "HttpOnly",
@@ -507,18 +466,15 @@ function eliminarCookieSesion(
         esHttps
             ? "Secure"
             : ""
-
     ]
         .filter(Boolean)
         .join("; ");
-
 
     res.setHeader(
         "Set-Cookie",
         cookie
     );
 }
-
 
 /* =========================================================
    MIDDLEWARE DE AUTENTICACIÓN
@@ -529,30 +485,23 @@ function requireAuth(
     res,
     next
 ) {
-
     const sesion =
         obtenerSesion(req);
 
-
     if (!sesion) {
-
         if (
             req.path.startsWith("/api/")
         ) {
-
             return res.status(401).json({
-
                 error:
                     "Sesión no válida o expirada."
             });
         }
 
-
         return res.redirect(
             "/login.html"
         );
     }
-
 
     /*
        Comprobamos además que el usuario
@@ -566,27 +515,21 @@ function requireAuth(
             ADMIN_USER
         )
     ) {
-
         return res.status(401).json({
-
             error:
                 "Sesión no autorizada."
         });
     }
 
-
     req.sesion =
         sesion;
-
 
     next();
 }
 
-
 /* =========================================================
    AUTENTICACIÓN
    ========================================================= */
-
 
 /* =========================================================
    POST /api/auth/login
@@ -595,46 +538,36 @@ function requireAuth(
 app.post(
     "/api/auth/login",
     (req, res) => {
-
         try {
-
             const {
                 usuario,
                 password
             } = req.body;
-
 
             if (
                 !ADMIN_USER ||
                 !ADMIN_PASSWORD ||
                 !AUTH_SECRET
             ) {
-
                 console.error(
                     "❌ Autenticación no disponible: faltan variables de entorno."
                 );
 
-
                 return res.status(500).json({
-
                     error:
                         "El sistema de autenticación no está configurado correctamente en el servidor."
                 });
             }
 
-
             if (
                 typeof usuario !== "string" ||
                 typeof password !== "string"
             ) {
-
                 return res.status(400).json({
-
                     error:
                         "Usuario y contraseña son obligatorios."
                 });
             }
-
 
             const usuarioCorrecto =
                 compararSeguramente(
@@ -642,50 +575,36 @@ app.post(
                     ADMIN_USER
                 );
 
-
             const passwordCorrecta =
                 compararSeguramente(
                     password,
                     ADMIN_PASSWORD
                 );
 
-
             if (
                 !usuarioCorrecto ||
                 !passwordCorrecta
             ) {
-
                 console.log(
                     "⚠️ Intento de acceso rechazado."
                 );
 
-
                 return res.status(401).json({
-
                     error:
                         "Usuario o contraseña incorrectos."
                 });
             }
-
-
-            /*
-               Creamos una sesión firmada.
-
-               Ya NO depende de un Map en memoria.
-            */
 
             const token =
                 crearTokenSesion(
                     ADMIN_USER
                 );
 
-
             establecerCookieSesion(
                 req,
                 res,
                 token
             );
-
 
             console.log("");
             console.log(
@@ -714,9 +633,7 @@ app.post(
             );
             console.log("");
 
-
             return res.json({
-
                 ok: true,
 
                 mensaje:
@@ -724,22 +641,18 @@ app.post(
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error iniciando sesión:",
                 error
             );
 
-
             return res.status(500).json({
-
                 error:
                     "No fue posible iniciar sesión."
             });
         }
     }
 );
-
 
 /* =========================================================
    GET /api/auth/me
@@ -748,19 +661,14 @@ app.post(
 app.get(
     "/api/auth/me",
     (req, res) => {
-
         const sesion =
             obtenerSesion(req);
 
-
         if (!sesion) {
-
             return res.status(401).json({
-
                 autenticado: false
             });
         }
-
 
         if (
             !compararSeguramente(
@@ -768,16 +676,12 @@ app.get(
                 ADMIN_USER
             )
         ) {
-
             return res.status(401).json({
-
                 autenticado: false
             });
         }
 
-
         return res.json({
-
             autenticado: true,
 
             usuario:
@@ -789,7 +693,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    POST /api/auth/logout
    ========================================================= */
@@ -797,20 +700,16 @@ app.get(
 app.post(
     "/api/auth/logout",
     (req, res) => {
-
         eliminarCookieSesion(
             req,
             res
         );
 
-
         console.log(
             "🔒 Sesión cerrada."
         );
 
-
         return res.json({
-
             ok: true,
 
             mensaje:
@@ -824,12 +723,9 @@ app.post(
    ========================================================= */
 
 function subirImagen(buffer) {
-
     return new Promise(
         (resolve, reject) => {
-
             if (!buffer) {
-
                 return reject(
                     new Error(
                         "No se recibió ninguna imagen."
@@ -865,9 +761,7 @@ function subirImagen(buffer) {
                         error,
                         resultado
                     ) => {
-
                         if (error) {
-
                             console.error("");
                             console.error(
                                 "========================================"
@@ -913,7 +807,6 @@ function subirImagen(buffer) {
                         }
 
                         if (!resultado) {
-
                             return reject(
                                 new Error(
                                     "Cloudinary no devolvió información de la imagen."
@@ -941,7 +834,6 @@ function subirImagen(buffer) {
     );
 }
 
-
 /* =========================================================
    CATEGORÍAS
    ========================================================= */
@@ -950,9 +842,7 @@ app.get(
     "/api/categorias",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(`
                     SELECT
@@ -967,7 +857,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo categorías:",
                 error
@@ -982,7 +871,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    CREAR CATEGORÍA
    ========================================================= */
@@ -991,9 +879,7 @@ app.post(
     "/api/categorias",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 nombre
             } = req.body;
@@ -1002,7 +888,6 @@ app.post(
                 !nombre ||
                 !nombre.trim()
             ) {
-
                 return res.status(400).json({
                     error:
                         "El nombre de la categoría es obligatorio."
@@ -1032,7 +917,6 @@ app.post(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error creando categoría:",
                 error
@@ -1041,7 +925,6 @@ app.post(
             if (
                 error.code === "23505"
             ) {
-
                 return res.status(400).json({
                     error:
                         "La categoría ya existe."
@@ -1057,7 +940,6 @@ app.post(
     }
 );
 
-
 /* =========================================================
    PROVEEDORES
    ========================================================= */
@@ -1066,9 +948,7 @@ app.get(
     "/api/proveedores",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(`
                     SELECT
@@ -1092,7 +972,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo proveedores:",
                 error
@@ -1107,7 +986,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    OBTENER PRODUCTOS - PÚBLICO
    ========================================================= */
@@ -1115,9 +993,7 @@ app.get(
 app.get(
     "/api/productos",
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(`
                     SELECT
@@ -1188,7 +1064,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error("");
             console.error(
                 "========================================"
@@ -1233,7 +1108,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    TODAS LAS RUTAS ADMINISTRATIVAS DE PRODUCTOS
    ========================================================= */
@@ -1243,7 +1117,6 @@ app.post(
     requireAuth,
     upload.single("imagen"),
     async (req, res) => {
-
         console.log("");
         console.log(
             "========================================"
@@ -1256,7 +1129,6 @@ app.post(
         );
 
         try {
-
             const {
                 nombre,
                 codigo,
@@ -1296,7 +1168,6 @@ app.post(
                 !nombre ||
                 !nombre.trim()
             ) {
-
                 return res.status(400).json({
                     error:
                         "El nombre del producto es obligatorio."
@@ -1307,7 +1178,6 @@ app.post(
                 !codigo ||
                 !codigo.trim()
             ) {
-
                 return res.status(400).json({
                     error:
                         "El código del producto es obligatorio."
@@ -1318,7 +1188,6 @@ app.post(
                 precio_compra === undefined ||
                 precio_compra === ""
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de compra es obligatorio."
@@ -1329,7 +1198,6 @@ app.post(
                 precio_venta === undefined ||
                 precio_venta === ""
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de venta es obligatorio."
@@ -1340,7 +1208,6 @@ app.post(
                 cantidad === undefined ||
                 cantidad === ""
             ) {
-
                 return res.status(400).json({
                     error:
                         "La cantidad es obligatoria."
@@ -1348,7 +1215,6 @@ app.post(
             }
 
             if (!req.file) {
-
                 return res.status(400).json({
                     error:
                         "Debes seleccionar una imagen para el producto."
@@ -1371,7 +1237,6 @@ app.post(
                 !Number.isFinite(precioCompraNumero) ||
                 precioCompraNumero < 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de compra no es válido."
@@ -1382,7 +1247,6 @@ app.post(
                 !Number.isFinite(precioVentaNumero) ||
                 precioVentaNumero < 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de venta no es válido."
@@ -1393,7 +1257,6 @@ app.post(
                 !Number.isFinite(cantidadNumero) ||
                 cantidadNumero < 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "La cantidad no es válida."
@@ -1404,7 +1267,6 @@ app.post(
                 !Number.isFinite(stockMinimoNumero) ||
                 stockMinimoNumero < 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "El stock mínimo no es válido."
@@ -1506,7 +1368,6 @@ app.post(
             });
 
         } catch (error) {
-
             console.error("");
             console.error(
                 "========================================"
@@ -1571,7 +1432,6 @@ app.post(
                 error.http_code === 401 ||
                 error.http_code === 403
             ) {
-
                 return res
                     .status(
                         error.http_code
@@ -1585,7 +1445,6 @@ app.post(
             if (
                 error.code === "23505"
             ) {
-
                 return res.status(400).json({
                     error:
                         "El código del producto ya existe. Usa un código diferente."
@@ -1595,7 +1454,6 @@ app.post(
             if (
                 error.code === "23503"
             ) {
-
                 return res.status(400).json({
                     error:
                         "La categoría o el proveedor seleccionado no existe."
@@ -1605,7 +1463,6 @@ app.post(
             if (
                 error.code === "23502"
             ) {
-
                 return res.status(400).json({
                     error:
                         error.column
@@ -1617,7 +1474,6 @@ app.post(
             if (
                 error.code === "22P02"
             ) {
-
                 return res.status(400).json({
                     error:
                         "Uno de los datos enviados tiene un formato incorrecto."
@@ -1633,7 +1489,6 @@ app.post(
     }
 );
 
-
 /* =========================================================
    ACTUALIZAR PRODUCTO
    ========================================================= */
@@ -1642,9 +1497,7 @@ app.put(
     "/api/productos/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -1666,7 +1519,6 @@ app.put(
                 !nombre ||
                 !nombre.trim()
             ) {
-
                 return res.status(400).json({
                     error:
                         "El nombre del producto es obligatorio."
@@ -1677,7 +1529,6 @@ app.put(
                 !codigo ||
                 !codigo.trim()
             ) {
-
                 return res.status(400).json({
                     error:
                         "El código del producto es obligatorio."
@@ -1699,7 +1550,6 @@ app.put(
             if (
                 !Number.isFinite(precioCompraNumero)
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de compra no es válido."
@@ -1709,7 +1559,6 @@ app.put(
             if (
                 !Number.isFinite(precioVentaNumero)
             ) {
-
                 return res.status(400).json({
                     error:
                         "El precio de venta no es válido."
@@ -1719,7 +1568,6 @@ app.put(
             if (
                 !Number.isFinite(cantidadNumero)
             ) {
-
                 return res.status(400).json({
                     error:
                         "La cantidad no es válida."
@@ -1765,7 +1613,6 @@ app.put(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Producto no encontrado."
@@ -1787,7 +1634,6 @@ app.put(
             });
 
         } catch (error) {
-
             console.error(
                 "❌ ERROR ACTUALIZANDO PRODUCTO"
             );
@@ -1815,7 +1661,6 @@ app.put(
             if (
                 error.code === "23505"
             ) {
-
                 return res.status(400).json({
                     error:
                         "El código del producto ya existe."
@@ -1831,7 +1676,6 @@ app.put(
     }
 );
 
-
 /* =========================================================
    DESACTIVAR PRODUCTO
    ========================================================= */
@@ -1840,9 +1684,7 @@ app.delete(
     "/api/productos/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -1863,7 +1705,6 @@ app.delete(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Producto no encontrado."
@@ -1885,7 +1726,6 @@ app.delete(
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error desactivando producto:",
                 error
@@ -1900,7 +1740,6 @@ app.delete(
     }
 );
 
-
 /* =========================================================
    ACTIVAR PRODUCTO
    ========================================================= */
@@ -1909,9 +1748,7 @@ app.patch(
     "/api/productos/:id/activar",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -1932,7 +1769,6 @@ app.patch(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Producto no encontrado."
@@ -1954,7 +1790,6 @@ app.patch(
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error activando producto:",
                 error
@@ -1969,7 +1804,6 @@ app.patch(
     }
 );
 
-
 /* =========================================================
    COMPRAS
    ========================================================= */
@@ -1978,9 +1812,7 @@ app.get(
     "/api/compras",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -2028,7 +1860,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo compras:",
                 error
@@ -2043,14 +1874,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/compras/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -2081,7 +1909,6 @@ app.get(
             if (
                 compraResultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Compra no encontrada."
@@ -2118,12 +1945,12 @@ app.get(
             res.json({
                 compra:
                     compraResultado.rows[0],
+
                 detalles:
                     detallesResultado.rows
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo detalle de compra:",
                 error
@@ -2138,7 +1965,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    REGISTRAR COMPRA
    ========================================================= */
@@ -2147,12 +1973,10 @@ app.post(
     "/api/compras",
     requireAuth,
     async (req, res) => {
-
         const client =
             await pool.connect();
 
         try {
-
             const {
                 proveedor_id,
                 fecha,
@@ -2163,7 +1987,6 @@ app.post(
             if (
                 !Array.isArray(detalles)
             ) {
-
                 return res.status(400).json({
                     error:
                         "La compra debe contener productos."
@@ -2173,7 +1996,6 @@ app.post(
             if (
                 detalles.length === 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "Debes agregar al menos un producto."
@@ -2184,7 +2006,6 @@ app.post(
                 const detalle
                 of detalles
             ) {
-
                 const productoId =
                     Number(
                         detalle.producto_id
@@ -2204,7 +2025,6 @@ app.post(
                     !Number.isInteger(productoId) ||
                     productoId <= 0
                 ) {
-
                     return res.status(400).json({
                         error:
                             "Uno de los productos seleccionados no es válido."
@@ -2215,7 +2035,6 @@ app.post(
                     !Number.isInteger(cantidad) ||
                     cantidad <= 0
                 ) {
-
                     return res.status(400).json({
                         error:
                             "La cantidad debe ser un número entero mayor que cero."
@@ -2226,7 +2045,6 @@ app.post(
                     !Number.isFinite(precioCompra) ||
                     precioCompra <= 0
                 ) {
-
                     return res.status(400).json({
                         error:
                             "El precio de compra debe ser mayor que cero."
@@ -2244,7 +2062,6 @@ app.post(
                 const detalle
                 of detalles
             ) {
-
                 const cantidad =
                     Number(
                         detalle.cantidad
@@ -2283,8 +2100,11 @@ app.post(
                         proveedor_id
                             ? Number(proveedor_id)
                             : null,
+
                         fecha || null,
+
                         total,
+
                         observaciones
                             ? observaciones.trim()
                             : null
@@ -2301,7 +2121,6 @@ app.post(
                 const detalle
                 of detalles
             ) {
-
                 const productoId =
                     Number(
                         detalle.producto_id
@@ -2342,7 +2161,6 @@ app.post(
                 if (
                     productoResultado.rows.length === 0
                 ) {
-
                     throw new Error(
                         `El producto con ID ${productoId} no existe.`
                     );
@@ -2479,7 +2297,6 @@ app.post(
             });
 
         } catch (error) {
-
             try {
                 await client.query(
                     "ROLLBACK"
@@ -2487,7 +2304,6 @@ app.post(
             } catch (
                 rollbackError
             ) {
-
                 console.error(
                     "❌ Error haciendo ROLLBACK:",
                     rollbackError
@@ -2531,7 +2347,6 @@ app.post(
             if (
                 error.code === "23503"
             ) {
-
                 return res.status(400).json({
                     error:
                         "El proveedor o uno de los productos seleccionados no existe."
@@ -2541,7 +2356,6 @@ app.post(
             if (
                 error.code === "23502"
             ) {
-
                 return res.status(400).json({
                     error:
                         error.column
@@ -2553,7 +2367,6 @@ app.post(
             if (
                 error.code === "22P02"
             ) {
-
                 return res.status(400).json({
                     error:
                         "Uno de los datos enviados tiene un formato incorrecto."
@@ -2567,12 +2380,10 @@ app.post(
             });
 
         } finally {
-
             client.release();
         }
     }
 );
-
 
 /* =========================================================
    VENTAS
@@ -2582,9 +2393,7 @@ app.get(
     "/api/ventas",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -2624,7 +2433,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo ventas:",
                 error
@@ -2639,14 +2447,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/ventas/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -2672,7 +2477,6 @@ app.get(
             if (
                 ventaResultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Venta no encontrada."
@@ -2719,7 +2523,6 @@ app.get(
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo detalle de venta:",
                 error
@@ -2734,7 +2537,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    REGISTRAR VENTA
    ========================================================= */
@@ -2743,12 +2545,10 @@ app.post(
     "/api/ventas",
     requireAuth,
     async (req, res) => {
-
         const client =
             await pool.connect();
 
         try {
-
             const {
                 metodo_pago,
                 observaciones,
@@ -2758,7 +2558,6 @@ app.post(
             if (
                 !Array.isArray(detalles)
             ) {
-
                 return res.status(400).json({
                     error:
                         "La venta debe contener productos."
@@ -2768,7 +2567,6 @@ app.post(
             if (
                 detalles.length === 0
             ) {
-
                 return res.status(400).json({
                     error:
                         "Debes agregar al menos un producto."
@@ -2782,7 +2580,6 @@ app.post(
                 const detalle
                 of detalles
             ) {
-
                 const productoId =
                     Number(
                         detalle.producto_id
@@ -2797,7 +2594,6 @@ app.post(
                     !Number.isInteger(productoId) ||
                     productoId <= 0
                 ) {
-
                     return res.status(400).json({
                         error:
                             "Uno de los productos seleccionados no es válido."
@@ -2808,7 +2604,6 @@ app.post(
                     !Number.isInteger(cantidad) ||
                     cantidad <= 0
                 ) {
-
                     return res.status(400).json({
                         error:
                             "La cantidad debe ser un número entero mayor que cero."
@@ -2820,16 +2615,13 @@ app.post(
                         productoId
                     )
                 ) {
-
                     productosMap.set(
                         productoId,
                         productosMap.get(
                             productoId
                         ) + cantidad
                     );
-
                 } else {
-
                     productosMap.set(
                         productoId,
                         cantidad
@@ -2904,7 +2696,6 @@ app.post(
                 const item
                 of productosVenta
             ) {
-
                 const productoResultado =
                     await client.query(
                         `
@@ -2929,7 +2720,6 @@ app.post(
                 if (
                     productoResultado.rows.length === 0
                 ) {
-
                     throw new Error(
                         `El producto con ID ${item.producto_id} no existe.`
                     );
@@ -2941,7 +2731,6 @@ app.post(
                 if (
                     !producto.activo
                 ) {
-
                     throw new Error(
                         `El producto "${producto.nombre}" está inactivo.`
                     );
@@ -2961,7 +2750,6 @@ app.post(
                     cantidadSolicitada >
                     stockActual
                 ) {
-
                     throw new Error(
                         `Stock insuficiente para "${producto.nombre}". Disponible: ${stockActual}. Solicitado: ${cantidadSolicitada}.`
                     );
@@ -3026,7 +2814,6 @@ app.post(
                     );
 
                 detallesGuardados.push({
-
                     ...detalleResultado.rows[0],
 
                     producto:
@@ -3066,7 +2853,6 @@ app.post(
                 if (
                     stockResultado.rows.length === 0
                 ) {
-
                     throw new Error(
                         `No fue posible actualizar el stock de "${producto.nombre}".`
                     );
@@ -3177,7 +2963,6 @@ app.post(
             });
 
         } catch (error) {
-
             try {
                 await client.query(
                     "ROLLBACK"
@@ -3185,7 +2970,6 @@ app.post(
             } catch (
                 rollbackError
             ) {
-
                 console.error(
                     "❌ Error haciendo ROLLBACK:",
                     rollbackError
@@ -3243,7 +3027,6 @@ app.post(
                     )
                 )
             ) {
-
                 return res.status(400).json({
                     error:
                         error.message
@@ -3253,7 +3036,6 @@ app.post(
             if (
                 error.code === "23503"
             ) {
-
                 return res.status(400).json({
                     error:
                         "El producto seleccionado no existe."
@@ -3263,7 +3045,6 @@ app.post(
             if (
                 error.code === "23502"
             ) {
-
                 return res.status(400).json({
                     error:
                         error.column
@@ -3275,7 +3056,6 @@ app.post(
             if (
                 error.code === "22P02"
             ) {
-
                 return res.status(400).json({
                     error:
                         "Uno de los datos enviados tiene un formato incorrecto."
@@ -3289,12 +3069,10 @@ app.post(
             });
 
         } finally {
-
             client.release();
         }
     }
 );
-
 
 /* =========================================================
    INVENTARIO
@@ -3304,9 +3082,7 @@ app.get(
     "/api/inventario",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -3352,7 +3128,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo inventario:",
                 error
@@ -3367,14 +3142,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/inventario/movimientos",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -3409,7 +3181,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo movimientos de inventario:",
                 error
@@ -3424,7 +3195,6 @@ app.get(
     }
 );
 
-
 /* =========================================================
    PROVEEDORES
    ========================================================= */
@@ -3433,9 +3203,7 @@ app.get(
     "/api/proveedores/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -3466,7 +3234,6 @@ app.get(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Proveedor no encontrado."
@@ -3478,7 +3245,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo proveedor:",
                 error
@@ -3493,14 +3259,11 @@ app.get(
     }
 );
 
-
 app.post(
     "/api/proveedores",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 nombre,
                 empresa,
@@ -3541,7 +3304,6 @@ app.post(
                 ).trim();
 
             if (!nombreLimpio) {
-
                 return res.status(400).json({
                     error:
                         "El nombre del proveedor es obligatorio."
@@ -3597,12 +3359,12 @@ app.post(
             res.status(201).json({
                 mensaje:
                     "Proveedor creado correctamente.",
+
                 proveedor:
                     resultado.rows[0]
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error creando proveedor:",
                 error
@@ -3617,14 +3379,11 @@ app.post(
     }
 );
 
-
 app.put(
     "/api/proveedores/:id",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -3669,7 +3428,6 @@ app.put(
                 ).trim();
 
             if (!nombreLimpio) {
-
                 return res.status(400).json({
                     error:
                         "El nombre del proveedor es obligatorio."
@@ -3716,7 +3474,6 @@ app.put(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Proveedor no encontrado."
@@ -3726,12 +3483,12 @@ app.put(
             res.json({
                 mensaje:
                     "Proveedor actualizado correctamente.",
+
                 proveedor:
                     resultado.rows[0]
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error actualizando proveedor:",
                 error
@@ -3746,14 +3503,11 @@ app.put(
     }
 );
 
-
 app.patch(
     "/api/proveedores/:id/activar",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const {
                 id
             } = req.params;
@@ -3765,7 +3519,6 @@ app.patch(
             if (
                 typeof activo !== "boolean"
             ) {
-
                 return res.status(400).json({
                     error:
                         "El campo activo debe ser true o false."
@@ -3802,7 +3555,6 @@ app.patch(
             if (
                 resultado.rows.length === 0
             ) {
-
                 return res.status(404).json({
                     error:
                         "Proveedor no encontrado."
@@ -3814,12 +3566,12 @@ app.patch(
                     activo
                         ? "Proveedor activado correctamente."
                         : "Proveedor desactivado correctamente.",
+
                 proveedor:
                     resultado.rows[0]
             });
 
         } catch (error) {
-
             console.error(
                 "❌ Error cambiando estado del proveedor:",
                 error
@@ -3834,7 +3586,6 @@ app.patch(
     }
 );
 
-
 /* =========================================================
    REPORTES
    ========================================================= */
@@ -3843,9 +3594,7 @@ app.get(
     "/api/reportes/resumen",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -3964,7 +3713,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo resumen de reportes:",
                 error
@@ -3979,14 +3727,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/reportes/ventas",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -4039,7 +3784,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo reporte de ventas:",
                 error
@@ -4054,14 +3798,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/reportes/productos-vendidos",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -4113,7 +3854,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo productos vendidos:",
                 error
@@ -4128,14 +3868,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/reportes/compras",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -4181,7 +3918,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo reporte de compras:",
                 error
@@ -4196,14 +3932,11 @@ app.get(
     }
 );
 
-
 app.get(
     "/api/reportes/movimientos",
     requireAuth,
     async (req, res) => {
-
         try {
-
             const resultado =
                 await pool.query(
                     `
@@ -4237,7 +3970,6 @@ app.get(
             );
 
         } catch (error) {
-
             console.error(
                 "❌ Error obteniendo movimientos:",
                 error
@@ -4252,23 +3984,18 @@ app.get(
     }
 );
 
-
 /* =========================================================
    RUTAS HTML PÚBLICAS
    ========================================================= */
 
 /*
-   IMPORTANTE:
-
    La "/" vuelve a ser el catálogo público.
-
    Se sirve index.html.
 */
 
 app.get(
     "/",
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4279,7 +4006,6 @@ app.get(
     }
 );
 
-
 /*
    Login público.
 */
@@ -4287,7 +4013,6 @@ app.get(
 app.get(
     "/login.html",
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4297,7 +4022,6 @@ app.get(
         );
     }
 );
-
 
 /* =========================================================
    RUTAS HTML PROTEGIDAS
@@ -4311,7 +4035,6 @@ app.get(
     "/admin",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4321,7 +4044,6 @@ app.get(
         );
     }
 );
-
 
 /*
    /admin.html
@@ -4331,7 +4053,6 @@ app.get(
     "/admin.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4342,7 +4063,6 @@ app.get(
     }
 );
 
-
 /*
    PRODUCTOS
 */
@@ -4351,7 +4071,6 @@ app.get(
     "/productos.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4362,7 +4081,6 @@ app.get(
     }
 );
 
-
 /*
    COMPRAS
 */
@@ -4371,7 +4089,6 @@ app.get(
     "/compras.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4382,7 +4099,6 @@ app.get(
     }
 );
 
-
 /*
    VENTAS
 */
@@ -4391,7 +4107,6 @@ app.get(
     "/ventas.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4402,7 +4117,6 @@ app.get(
     }
 );
 
-
 /*
    HISTORIAL
 */
@@ -4411,7 +4125,6 @@ app.get(
     "/historial.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4422,7 +4135,6 @@ app.get(
     }
 );
 
-
 /*
    INVENTARIO
 */
@@ -4431,7 +4143,6 @@ app.get(
     "/inventario.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4442,7 +4153,6 @@ app.get(
     }
 );
 
-
 /*
    PROVEEDORES
 */
@@ -4451,7 +4161,6 @@ app.get(
     "/proveedores.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4462,7 +4171,6 @@ app.get(
     }
 );
 
-
 /*
    REPORTES
 */
@@ -4471,7 +4179,6 @@ app.get(
     "/reportes.html",
     requireAuth,
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -4482,14 +4189,11 @@ app.get(
     }
 );
 
-
 /* =========================================================
    ARCHIVOS ESTÁTICOS
    ========================================================= */
 
 /*
-   IMPORTANTE:
-
    Este middleware queda DESPUÉS de las rutas HTML
    protegidas.
 
@@ -4506,41 +4210,6 @@ app.use(
     )
 );
 
-
-/* =========================================================
-   LIMPIEZA AUTOMÁTICA DE SESIONES
-   ========================================================= */
-
-setInterval(
-    () => {
-
-        const ahora =
-            Date.now();
-
-        for (
-            const [
-                token,
-                sesion
-            ]
-            of sesiones.entries()
-        ) {
-
-            if (
-                ahora >
-                sesion.expiresAt
-            ) {
-
-                sesiones.delete(
-                    token
-                );
-            }
-        }
-
-    },
-    15 * 60 * 1000
-);
-
-
 /* =========================================================
    MANEJADOR GENERAL DE ERRORES
    ========================================================= */
@@ -4552,7 +4221,6 @@ app.use(
         res,
         next
     ) => {
-
         console.error("");
         console.error(
             "========================================"
@@ -4602,7 +4270,6 @@ app.use(
     }
 );
 
-
 /* =========================================================
    INICIAR SERVIDOR
    ========================================================= */
@@ -4610,7 +4277,6 @@ app.use(
 app.listen(
     PORT,
     () => {
-
         console.log("");
         console.log(
             "========================================"
