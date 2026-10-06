@@ -4,11 +4,47 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
+const crypto = require("crypto");
 const { v2: cloudinary } = require("cloudinary");
 const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+/* =========================================================
+   CONFIGURACIÓN DE AUTENTICACIÓN
+   ========================================================= */
+
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const AUTH_SECRET = process.env.AUTH_SECRET;
+
+const SESSION_COOKIE = "lunas_session";
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas
+
+const sesiones = new Map();
+
+/* =========================================================
+   VERIFICAR CONFIGURACIÓN DE SEGURIDAD
+   ========================================================= */
+
+if (!ADMIN_USER) {
+    console.error(
+        "❌ Falta ADMIN_USER en las variables de entorno."
+    );
+}
+
+if (!ADMIN_PASSWORD) {
+    console.error(
+        "❌ Falta ADMIN_PASSWORD en las variables de entorno."
+    );
+}
+
+if (!AUTH_SECRET) {
+    console.error(
+        "❌ Falta AUTH_SECRET en las variables de entorno."
+    );
+}
 
 /* =========================================================
    CONFIGURACIÓN GENERAL
@@ -95,17 +131,496 @@ const upload = multer({
 });
 
 /* =========================================================
-   CARPETA PUBLIC
+   FUNCIONES DE AUTENTICACIÓN
    ========================================================= */
 
-app.use(
-    express.static(
-        path.join(
-            __dirname,
-            "public"
-        )
-    )
+/*
+   Leer cookies manualmente.
+
+   No necesitamos instalar cookie-parser.
+*/
+
+function obtenerCookies(req) {
+
+    const header =
+        req.headers.cookie;
+
+    if (!header) {
+        return {};
+    }
+
+    return header
+        .split(";")
+        .reduce(
+            (cookies, item) => {
+
+                const partes =
+                    item.trim().split("=");
+
+                const nombre =
+                    partes.shift();
+
+                const valor =
+                    partes.join("=");
+
+                if (nombre) {
+                    cookies[nombre] =
+                        decodeURIComponent(
+                            valor || ""
+                        );
+                }
+
+                return cookies;
+            },
+            {}
+        );
+}
+
+
+/*
+   Crear identificador de sesión.
+
+   AUTH_SECRET participa en la generación
+   del token para que la sesión no sea
+   simplemente un valor predecible.
+*/
+
+function crearTokenSesion() {
+
+    const aleatorio =
+        crypto.randomBytes(32).toString("hex");
+
+    const timestamp =
+        Date.now().toString();
+
+    const base =
+        `${aleatorio}.${timestamp}`;
+
+    const firma =
+        crypto
+            .createHmac(
+                "sha256",
+                AUTH_SECRET || "missing-auth-secret"
+            )
+            .update(base)
+            .digest("hex");
+
+    return `${base}.${firma}`;
+}
+
+
+/*
+   Comparación segura de valores.
+
+   Evita comparar directamente strings
+   cuando sea posible.
+*/
+
+function compararSeguramente(
+    valorA,
+    valorB
+) {
+
+    if (
+        typeof valorA !== "string" ||
+        typeof valorB !== "string"
+    ) {
+        return false;
+    }
+
+    const bufferA =
+        Buffer.from(
+            valorA,
+            "utf8"
+        );
+
+    const bufferB =
+        Buffer.from(
+            valorB,
+            "utf8"
+        );
+
+    if (
+        bufferA.length !==
+        bufferB.length
+    ) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(
+        bufferA,
+        bufferB
+    );
+}
+
+
+/*
+   Obtener sesión actual.
+*/
+
+function obtenerSesion(req) {
+
+    const cookies =
+        obtenerCookies(req);
+
+    const token =
+        cookies[SESSION_COOKIE];
+
+    if (!token) {
+        return null;
+    }
+
+    const sesion =
+        sesiones.get(token);
+
+    if (!sesion) {
+        return null;
+    }
+
+    if (
+        Date.now() >
+        sesion.expiresAt
+    ) {
+
+        sesiones.delete(token);
+
+        return null;
+    }
+
+    return {
+        token,
+        ...sesion
+    };
+}
+
+
+/*
+   Crear cookie de sesión.
+
+   HttpOnly:
+   JavaScript del navegador no puede
+   leer la cookie.
+
+   SameSite=Lax:
+   ayuda a reducir ataques CSRF.
+
+   Secure:
+   se activa en producción cuando
+   Render está utilizando HTTPS.
+*/
+
+function establecerCookieSesion(
+    res,
+    token
+) {
+
+    const secure =
+        process.env.NODE_ENV === "production";
+
+    const cookie =
+        [
+            `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
+
+            "HttpOnly",
+
+            "Path=/",
+
+            "SameSite=Lax",
+
+            `Max-Age=${Math.floor(
+                SESSION_DURATION / 1000
+            )}`,
+
+            secure
+                ? "Secure"
+                : ""
+        ]
+            .filter(Boolean)
+            .join("; ");
+
+    res.setHeader(
+        "Set-Cookie",
+        cookie
+    );
+}
+
+
+/*
+   Eliminar cookie de sesión.
+*/
+
+function eliminarCookieSesion(res) {
+
+    const secure =
+        process.env.NODE_ENV === "production";
+
+    const cookie =
+        [
+            `${SESSION_COOKIE}=`,
+            "HttpOnly",
+            "Path=/",
+            "SameSite=Lax",
+            "Max-Age=0",
+            "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+            secure
+                ? "Secure"
+                : ""
+        ]
+            .filter(Boolean)
+            .join("; ");
+
+    res.setHeader(
+        "Set-Cookie",
+        cookie
+    );
+}
+
+
+/* =========================================================
+   MIDDLEWARE DE AUTENTICACIÓN
+   ========================================================= */
+
+function requireAuth(
+    req,
+    res,
+    next
+) {
+
+    const sesion =
+        obtenerSesion(req);
+
+    if (!sesion) {
+
+        /*
+           Para peticiones API devolvemos
+           401 en lugar de redireccionar.
+        */
+
+        if (
+            req.path.startsWith("/api/")
+        ) {
+
+            return res.status(401).json({
+                error:
+                    "Sesión no válida o expirada."
+            });
+        }
+
+        /*
+           Para páginas HTML enviamos
+           al login.
+        */
+
+        return res.redirect(
+            "/login.html"
+        );
+    }
+
+    req.sesion =
+        sesion;
+
+    next();
+}
+
+
+/* =========================================================
+   AUTENTICACIÓN
+   ========================================================= */
+
+
+/*
+   POST /api/auth/login
+
+   Iniciar sesión.
+*/
+
+app.post(
+    "/api/auth/login",
+    (req, res) => {
+
+        try {
+
+            const {
+                usuario,
+                password
+            } = req.body;
+
+            if (
+                !ADMIN_USER ||
+                !ADMIN_PASSWORD ||
+                !AUTH_SECRET
+            ) {
+
+                console.error(
+                    "❌ Autenticación no disponible: faltan variables de entorno."
+                );
+
+                return res.status(500).json({
+                    error:
+                        "El sistema de autenticación no está configurado correctamente en el servidor."
+                });
+            }
+
+            if (
+                typeof usuario !== "string" ||
+                typeof password !== "string"
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Usuario y contraseña son obligatorios."
+                });
+            }
+
+            const usuarioCorrecto =
+                compararSeguramente(
+                    usuario.trim(),
+                    ADMIN_USER
+                );
+
+            const passwordCorrecta =
+                compararSeguramente(
+                    password,
+                    ADMIN_PASSWORD
+                );
+
+            if (
+                !usuarioCorrecto ||
+                !passwordCorrecta
+            ) {
+
+                console.log(
+                    "⚠️ Intento de acceso rechazado."
+                );
+
+                return res.status(401).json({
+                    error:
+                        "Usuario o contraseña incorrectos."
+                });
+            }
+
+            const token =
+                crearTokenSesion();
+
+            const expiresAt =
+                Date.now() +
+                SESSION_DURATION;
+
+            sesiones.set(
+                token,
+                {
+                    usuario:
+                        ADMIN_USER,
+
+                    createdAt:
+                        Date.now(),
+
+                    expiresAt
+                }
+            );
+
+            establecerCookieSesion(
+                res,
+                token
+            );
+
+            console.log(
+                "✅ Inicio de sesión correcto:",
+                ADMIN_USER
+            );
+
+            return res.json({
+                ok: true,
+                mensaje:
+                    "Inicio de sesión correcto."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error iniciando sesión:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "No fue posible iniciar sesión."
+            });
+        }
+    }
 );
+
+
+/*
+   GET /api/auth/me
+
+   Comprobar sesión actual.
+*/
+
+app.get(
+    "/api/auth/me",
+    (req, res) => {
+
+        const sesion =
+            obtenerSesion(req);
+
+        if (!sesion) {
+
+            return res.status(401).json({
+                autenticado: false
+            });
+        }
+
+        return res.json({
+            autenticado: true,
+            usuario:
+                sesion.usuario,
+            expiresAt:
+                sesion.expiresAt
+        });
+    }
+);
+
+
+/*
+   POST /api/auth/logout
+
+   Cerrar sesión.
+*/
+
+app.post(
+    "/api/auth/logout",
+    (req, res) => {
+
+        const cookies =
+            obtenerCookies(req);
+
+        const token =
+            cookies[SESSION_COOKIE];
+
+        if (token) {
+
+            sesiones.delete(
+                token
+            );
+        }
+
+        eliminarCookieSesion(
+            res
+        );
+
+        console.log(
+            "🔒 Sesión cerrada."
+        );
+
+        return res.json({
+            ok: true,
+            mensaje:
+                "Sesión cerrada correctamente."
+        });
+    }
+);
+
 
 /* =========================================================
    FUNCIÓN PARA SUBIR IMAGEN A CLOUDINARY
@@ -229,12 +744,14 @@ function subirImagen(buffer) {
     );
 }
 
+
 /* =========================================================
    CATEGORÍAS
    ========================================================= */
 
 app.get(
     "/api/categorias",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -275,6 +792,7 @@ app.get(
 
 app.post(
     "/api/categorias",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -336,7 +854,7 @@ app.post(
             res.status(500).json({
                 error:
                     error.message ||
-                    "Error creando categoría"
+                    "Error creando categorías"
             });
         }
     }
@@ -349,6 +867,7 @@ app.post(
 
 app.get(
     "/api/proveedores",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -357,9 +876,18 @@ app.get(
                 await pool.query(`
                     SELECT
                         id,
-                        nombre
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
                     FROM proveedores
-                    ORDER BY nombre ASC
+                    ORDER BY
+                        activo DESC,
+                        nombre ASC
                 `);
 
             res.json(
@@ -376,7 +904,7 @@ app.get(
             res.status(500).json({
                 error:
                     error.message ||
-                    "Error obteniendo proveedores"
+                    "Error obteniendo proveedores."
             });
         }
     }
@@ -384,7 +912,7 @@ app.get(
 
 
 /* =========================================================
-   OBTENER PRODUCTOS
+   OBTENER PRODUCTOS - PÚBLICO
    ========================================================= */
 
 app.get(
@@ -413,14 +941,6 @@ app.get(
 
                         p.cantidad,
                         p.stock_minimo,
-
-                        /*
-                           IMPORTANTE:
-                           La base de datos guarda la URL
-                           en la columna "imagen".
-
-                           El frontend utiliza "imagen_url".
-                        */
 
                         p.imagen AS imagen_url,
 
@@ -518,11 +1038,12 @@ app.get(
 
 
 /* =========================================================
-   CREAR PRODUCTO
+   TODAS LAS RUTAS ADMINISTRATIVAS DE PRODUCTOS
    ========================================================= */
 
 app.post(
     "/api/productos",
+    requireAuth,
     upload.single("imagen"),
     async (req, res) => {
 
@@ -573,10 +1094,6 @@ app.post(
                     ? `${req.file.originalname} (${req.file.size} bytes)`
                     : "NO"
             );
-
-            /* -------------------------------------------------
-               VALIDACIONES
-               ------------------------------------------------- */
 
             if (
                 !nombre ||
@@ -642,29 +1159,19 @@ app.post(
             }
 
             const precioCompraNumero =
-                Number(
-                    precio_compra
-                );
+                Number(precio_compra);
 
             const precioVentaNumero =
-                Number(
-                    precio_venta
-                );
+                Number(precio_venta);
 
             const cantidadNumero =
-                Number(
-                    cantidad
-                );
+                Number(cantidad);
 
             const stockMinimoNumero =
-                Number(
-                    stock_minimo || 0
-                );
+                Number(stock_minimo || 0);
 
             if (
-                !Number.isFinite(
-                    precioCompraNumero
-                ) ||
+                !Number.isFinite(precioCompraNumero) ||
                 precioCompraNumero < 0
             ) {
 
@@ -675,9 +1182,7 @@ app.post(
             }
 
             if (
-                !Number.isFinite(
-                    precioVentaNumero
-                ) ||
+                !Number.isFinite(precioVentaNumero) ||
                 precioVentaNumero < 0
             ) {
 
@@ -688,9 +1193,7 @@ app.post(
             }
 
             if (
-                !Number.isFinite(
-                    cantidadNumero
-                ) ||
+                !Number.isFinite(cantidadNumero) ||
                 cantidadNumero < 0
             ) {
 
@@ -701,9 +1204,7 @@ app.post(
             }
 
             if (
-                !Number.isFinite(
-                    stockMinimoNumero
-                ) ||
+                !Number.isFinite(stockMinimoNumero) ||
                 stockMinimoNumero < 0
             ) {
 
@@ -712,10 +1213,6 @@ app.post(
                         "El stock mínimo no es válido."
                 });
             }
-
-            /* -------------------------------------------------
-               SUBIR IMAGEN
-               ------------------------------------------------- */
 
             console.log(
                 "☁️ Subiendo imagen a Cloudinary..."
@@ -727,16 +1224,9 @@ app.post(
                 );
 
             console.log(
-                "✅ Imagen subida:"
-            );
-
-            console.log(
+                "✅ Imagen subida:",
                 imagenUrl
             );
-
-            /* -------------------------------------------------
-               INSERTAR EN POSTGRESQL
-               ------------------------------------------------- */
 
             console.log(
                 "🗄️ Guardando producto en PostgreSQL..."
@@ -813,7 +1303,6 @@ app.post(
 
                 producto: {
                     ...producto,
-
                     imagen_url:
                         producto.imagen
                 }
@@ -873,20 +1362,13 @@ app.post(
             );
 
             console.error(
-                "Error completo:"
-            );
-
-            console.error(
+                "Error completo:",
                 error
             );
 
             console.error(
                 "========================================"
             );
-
-            /* -----------------------------------------------
-               ERROR CLOUDINARY 401 / 403
-               ----------------------------------------------- */
 
             if (
                 error.http_code === 401 ||
@@ -903,10 +1385,6 @@ app.post(
                     });
             }
 
-            /* -----------------------------------------------
-               CÓDIGO DUPLICADO
-               ----------------------------------------------- */
-
             if (
                 error.code === "23505"
             ) {
@@ -917,10 +1395,6 @@ app.post(
                 });
             }
 
-            /* -----------------------------------------------
-               ERROR DE CLAVE FORÁNEA
-               ----------------------------------------------- */
-
             if (
                 error.code === "23503"
             ) {
@@ -930,10 +1404,6 @@ app.post(
                         "La categoría o el proveedor seleccionado no existe."
                 });
             }
-
-            /* -----------------------------------------------
-               ERROR DE CAMPO OBLIGATORIO
-               ----------------------------------------------- */
 
             if (
                 error.code === "23502"
@@ -947,10 +1417,6 @@ app.post(
                 });
             }
 
-            /* -----------------------------------------------
-               ERROR DE TIPO DE DATOS
-               ----------------------------------------------- */
-
             if (
                 error.code === "22P02"
             ) {
@@ -960,10 +1426,6 @@ app.post(
                         "Uno de los datos enviados tiene un formato incorrecto."
                 });
             }
-
-            /* -----------------------------------------------
-               ERROR GENERAL
-               ----------------------------------------------- */
 
             res.status(500).json({
                 error:
@@ -981,6 +1443,7 @@ app.post(
 
 app.put(
     "/api/productos/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -1025,29 +1488,19 @@ app.put(
             }
 
             const precioCompraNumero =
-                Number(
-                    precio_compra
-                );
+                Number(precio_compra);
 
             const precioVentaNumero =
-                Number(
-                    precio_venta
-                );
+                Number(precio_venta);
 
             const cantidadNumero =
-                Number(
-                    cantidad
-                );
+                Number(cantidad);
 
             const stockMinimoNumero =
-                Number(
-                    stock_minimo || 0
-                );
+                Number(stock_minimo || 0);
 
             if (
-                !Number.isFinite(
-                    precioCompraNumero
-                )
+                !Number.isFinite(precioCompraNumero)
             ) {
 
                 return res.status(400).json({
@@ -1057,9 +1510,7 @@ app.put(
             }
 
             if (
-                !Number.isFinite(
-                    precioVentaNumero
-                )
+                !Number.isFinite(precioVentaNumero)
             ) {
 
                 return res.status(400).json({
@@ -1069,9 +1520,7 @@ app.put(
             }
 
             if (
-                !Number.isFinite(
-                    cantidadNumero
-                )
+                !Number.isFinite(cantidadNumero)
             ) {
 
                 return res.status(400).json({
@@ -1135,7 +1584,6 @@ app.put(
 
                 producto: {
                     ...producto,
-
                     imagen_url:
                         producto.imagen
                 }
@@ -1193,6 +1641,7 @@ app.put(
 
 app.delete(
     "/api/productos/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -1211,9 +1660,7 @@ app.delete(
                     WHERE id = $1
                     RETURNING *
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
 
             if (
@@ -1235,7 +1682,6 @@ app.delete(
 
                 producto: {
                     ...producto,
-
                     imagen_url:
                         producto.imagen
                 }
@@ -1264,6 +1710,7 @@ app.delete(
 
 app.patch(
     "/api/productos/:id/activar",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -1282,9 +1729,7 @@ app.patch(
                     WHERE id = $1
                     RETURNING *
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
 
             if (
@@ -1306,7 +1751,6 @@ app.patch(
 
                 producto: {
                     ...producto,
-
                     imagen_url:
                         producto.imagen
                 }
@@ -1333,13 +1777,9 @@ app.patch(
    COMPRAS
    ========================================================= */
 
-
-/* =========================================================
-   OBTENER TODAS LAS COMPRAS
-   ========================================================= */
-
 app.get(
     "/api/compras",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -1407,12 +1847,9 @@ app.get(
 );
 
 
-/* =========================================================
-   OBTENER UNA COMPRA CON SUS DETALLES
-   ========================================================= */
-
 app.get(
     "/api/compras/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -1427,9 +1864,7 @@ app.get(
                     SELECT
                         c.id,
                         c.proveedor_id,
-
                         p.nombre AS proveedor,
-
                         c.fecha,
                         c.total,
                         c.observaciones,
@@ -1443,9 +1878,7 @@ app.get(
 
                     WHERE c.id = $1
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
 
             if (
@@ -1465,10 +1898,8 @@ app.get(
                         dc.id,
                         dc.compra_id,
                         dc.producto_id,
-
                         p.nombre AS producto,
                         p.codigo,
-
                         dc.cantidad,
                         dc.precio_compra,
                         dc.subtotal
@@ -1484,19 +1915,14 @@ app.get(
                     ORDER BY
                         dc.id ASC
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
 
             res.json({
-
                 compra:
                     compraResultado.rows[0],
-
                 detalles:
                     detallesResultado.rows
-
             });
 
         } catch (error) {
@@ -1522,6 +1948,7 @@ app.get(
 
 app.post(
     "/api/compras",
+    requireAuth,
     async (req, res) => {
 
         const client =
@@ -1536,15 +1963,8 @@ app.post(
                 detalles
             } = req.body;
 
-
-            /* -------------------------------------------------
-               VALIDAR PRODUCTOS
-               ------------------------------------------------- */
-
             if (
-                !Array.isArray(
-                    detalles
-                )
+                !Array.isArray(detalles)
             ) {
 
                 return res.status(400).json({
@@ -1563,11 +1983,6 @@ app.post(
                 });
             }
 
-
-            /* -------------------------------------------------
-               VALIDAR CADA DETALLE
-               ------------------------------------------------- */
-
             for (
                 const detalle
                 of detalles
@@ -1588,11 +2003,8 @@ app.post(
                         detalle.precio_compra
                     );
 
-
                 if (
-                    !Number.isInteger(
-                        productoId
-                    ) ||
+                    !Number.isInteger(productoId) ||
                     productoId <= 0
                 ) {
 
@@ -1602,11 +2014,8 @@ app.post(
                     });
                 }
 
-
                 if (
-                    !Number.isInteger(
-                        cantidad
-                    ) ||
+                    !Number.isInteger(cantidad) ||
                     cantidad <= 0
                 ) {
 
@@ -1616,11 +2025,8 @@ app.post(
                     });
                 }
 
-
                 if (
-                    !Number.isFinite(
-                        precioCompra
-                    ) ||
+                    !Number.isFinite(precioCompra) ||
                     precioCompra <= 0
                 ) {
 
@@ -1631,22 +2037,11 @@ app.post(
                 }
             }
 
-
-            /* -------------------------------------------------
-               INICIAR TRANSACCIÓN
-               ------------------------------------------------- */
-
             await client.query(
                 "BEGIN"
             );
 
-
-            /* -------------------------------------------------
-               CALCULAR TOTAL
-               ------------------------------------------------- */
-
             let total = 0;
-
 
             for (
                 const detalle
@@ -1663,17 +2058,10 @@ app.post(
                         detalle.precio_compra
                     );
 
-                const subtotal =
+                total +=
                     cantidad *
                     precioCompra;
-
-                total += subtotal;
             }
-
-
-            /* -------------------------------------------------
-               CREAR COMPRA
-               ------------------------------------------------- */
 
             const compraResultado =
                 await client.query(
@@ -1688,10 +2076,7 @@ app.post(
                     VALUES
                     (
                         $1,
-                        COALESCE(
-                            $2,
-                            NOW()
-                        ),
+                        COALESCE($2, NOW()),
                         $3,
                         $4
                     )
@@ -1701,29 +2086,19 @@ app.post(
                         proveedor_id
                             ? Number(proveedor_id)
                             : null,
-
                         fecha || null,
-
                         total,
-
                         observaciones
                             ? observaciones.trim()
                             : null
                     ]
                 );
 
-
             const compra =
                 compraResultado.rows[0];
 
-
-            /* -------------------------------------------------
-               GUARDAR DETALLES
-               ------------------------------------------------- */
-
             const detallesGuardados =
                 [];
-
 
             for (
                 const detalle
@@ -1748,11 +2123,6 @@ app.post(
                 const subtotal =
                     cantidad *
                     precioCompra;
-
-
-                /* ---------------------------------------------
-                   BLOQUEAR PRODUCTO
-                   --------------------------------------------- */
 
                 const productoResultado =
                     await client.query(
@@ -1769,11 +2139,8 @@ app.post(
 
                         FOR UPDATE
                         `,
-                        [
-                            productoId
-                        ]
+                        [productoId]
                     );
-
 
                 if (
                     productoResultado.rows.length === 0
@@ -1783,15 +2150,6 @@ app.post(
                         `El producto con ID ${productoId} no existe.`
                     );
                 }
-
-
-                const producto =
-                    productoResultado.rows[0];
-
-
-                /* ---------------------------------------------
-                   INSERTAR DETALLE
-                   --------------------------------------------- */
 
                 const detalleResultado =
                     await client.query(
@@ -1823,30 +2181,20 @@ app.post(
                         ]
                     );
 
-
                 detallesGuardados.push(
                     detalleResultado.rows[0]
                 );
 
-
-                /* ---------------------------------------------
-                   AUMENTAR STOCK
-                   --------------------------------------------- */
-
                 await client.query(
                     `
                     UPDATE productos_lunas
-
                     SET
                         cantidad =
                             cantidad + $1,
-
                         precio_compra =
                             $2,
-
                         updated_at =
                             NOW()
-
                     WHERE id = $3
                     `,
                     [
@@ -1855,11 +2203,6 @@ app.post(
                         productoId
                     ]
                 );
-
-
-                /* ---------------------------------------------
-                   MOVIMIENTO DE INVENTARIO
-                   --------------------------------------------- */
 
                 await client.query(
                     `
@@ -1884,33 +2227,18 @@ app.post(
                     `,
                     [
                         productoId,
-
                         "COMPRA",
-
                         cantidad,
-
                         "Entrada de inventario por compra",
-
                         "COMPRA",
-
                         compra.id
                     ]
                 );
             }
 
-
-            /* -------------------------------------------------
-               CONFIRMAR TRANSACCIÓN
-               ------------------------------------------------- */
-
             await client.query(
                 "COMMIT"
             );
-
-
-            /* -------------------------------------------------
-               RESPUESTA
-               ------------------------------------------------- */
 
             console.log("");
             console.log(
@@ -1939,15 +2267,12 @@ app.post(
             );
             console.log("");
 
-
             res.status(201).json({
-
                 mensaje:
                     "Compra registrada correctamente.",
 
                 compra: {
                     ...compra,
-
                     total:
                         Number(total)
                 },
@@ -1956,20 +2281,12 @@ app.post(
                     detallesGuardados
             });
 
-
         } catch (error) {
 
-
-            /* -------------------------------------------------
-               ROLLBACK
-               ------------------------------------------------- */
-
             try {
-
                 await client.query(
                     "ROLLBACK"
                 );
-
             } catch (
                 rollbackError
             ) {
@@ -1979,7 +2296,6 @@ app.post(
                     rollbackError
                 );
             }
-
 
             console.error("");
             console.error(
@@ -1991,36 +2307,29 @@ app.post(
             console.error(
                 "========================================"
             );
-
             console.error(
                 "Mensaje:",
                 error.message
             );
-
             console.error(
                 "Código:",
                 error.code
             );
-
             console.error(
                 "Detalle:",
                 error.detail
             );
-
             console.error(
                 "Hint:",
                 error.hint
             );
-
             console.error(
                 "Error completo:",
                 error
             );
-
             console.error(
                 "========================================"
             );
-
 
             if (
                 error.code === "23503"
@@ -2031,7 +2340,6 @@ app.post(
                         "El proveedor o uno de los productos seleccionados no existe."
                 });
             }
-
 
             if (
                 error.code === "23502"
@@ -2045,7 +2353,6 @@ app.post(
                 });
             }
 
-
             if (
                 error.code === "22P02"
             ) {
@@ -2056,13 +2363,11 @@ app.post(
                 });
             }
 
-
             res.status(500).json({
                 error:
                     error.message ||
                     "Error registrando compra."
             });
-
 
         } finally {
 
@@ -2072,18 +2377,13 @@ app.post(
 );
 
 
-
 /* =========================================================
    VENTAS
    ========================================================= */
 
-
-/* =========================================================
-   OBTENER TODAS LAS VENTAS
-   ========================================================= */
-
 app.get(
     "/api/ventas",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -2143,12 +2443,9 @@ app.get(
 );
 
 
-/* =========================================================
-   OBTENER UNA VENTA CON SUS DETALLES
-   ========================================================= */
-
 app.get(
     "/api/ventas/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -2156,11 +2453,6 @@ app.get(
             const {
                 id
             } = req.params;
-
-
-            /* -------------------------------------------------
-               CABECERA DE LA VENTA
-               ------------------------------------------------- */
 
             const ventaResultado =
                 await pool.query(
@@ -2177,11 +2469,8 @@ app.get(
 
                     WHERE v.id = $1
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
-
 
             if (
                 ventaResultado.rows.length === 0
@@ -2192,11 +2481,6 @@ app.get(
                         "Venta no encontrada."
                 });
             }
-
-
-            /* -------------------------------------------------
-               DETALLES DE LA VENTA
-               ------------------------------------------------- */
 
             const detallesResultado =
                 await pool.query(
@@ -2226,20 +2510,15 @@ app.get(
                     ORDER BY
                         dv.id ASC
                     `,
-                    [
-                        id
-                    ]
+                    [id]
                 );
 
-
             res.json({
-
                 venta:
                     ventaResultado.rows[0],
 
                 detalles:
                     detallesResultado.rows
-
             });
 
         } catch (error) {
@@ -2265,6 +2544,7 @@ app.get(
 
 app.post(
     "/api/ventas",
+    requireAuth,
     async (req, res) => {
 
         const client =
@@ -2278,15 +2558,8 @@ app.post(
                 detalles
             } = req.body;
 
-
-            /* -------------------------------------------------
-               VALIDAR PRODUCTOS
-               ------------------------------------------------- */
-
             if (
-                !Array.isArray(
-                    detalles
-                )
+                !Array.isArray(detalles)
             ) {
 
                 return res.status(400).json({
@@ -2294,7 +2567,6 @@ app.post(
                         "La venta debe contener productos."
                 });
             }
-
 
             if (
                 detalles.length === 0
@@ -2306,14 +2578,8 @@ app.post(
                 });
             }
 
-
-            /* -------------------------------------------------
-               NORMALIZAR Y VALIDAR DETALLES
-               ------------------------------------------------- */
-
             const productosMap =
                 new Map();
-
 
             for (
                 const detalle
@@ -2330,11 +2596,8 @@ app.post(
                         detalle.cantidad
                     );
 
-
                 if (
-                    !Number.isInteger(
-                        productoId
-                    ) ||
+                    !Number.isInteger(productoId) ||
                     productoId <= 0
                 ) {
 
@@ -2344,11 +2607,8 @@ app.post(
                     });
                 }
 
-
                 if (
-                    !Number.isInteger(
-                        cantidad
-                    ) ||
+                    !Number.isInteger(cantidad) ||
                     cantidad <= 0
                 ) {
 
@@ -2358,12 +2618,6 @@ app.post(
                     });
                 }
 
-
-                /* ---------------------------------------------
-                   SI EL MISMO PRODUCTO APARECE DOS VECES,
-                   SUMAMOS LAS CANTIDADES
-                   --------------------------------------------- */
-
                 if (
                     productosMap.has(
                         productoId
@@ -2372,7 +2626,6 @@ app.post(
 
                     productosMap.set(
                         productoId,
-
                         productosMap.get(
                             productoId
                         ) + cantidad
@@ -2386,7 +2639,6 @@ app.post(
                     );
                 }
             }
-
 
             const productosVenta =
                 Array.from(
@@ -2403,19 +2655,9 @@ app.post(
                     })
                 );
 
-
-            /* -------------------------------------------------
-               INICIAR TRANSACCIÓN
-               ------------------------------------------------- */
-
             await client.query(
                 "BEGIN"
             );
-
-
-            /* -------------------------------------------------
-               CREAR CABECERA DE LA VENTA
-               ------------------------------------------------- */
 
             const ventaResultado =
                 await client.query(
@@ -2453,29 +2695,18 @@ app.post(
                     ]
                 );
 
-
             const venta =
                 ventaResultado.rows[0];
-
 
             let totalVenta = 0;
 
             const detallesGuardados =
                 [];
 
-
-            /* -------------------------------------------------
-               PROCESAR CADA PRODUCTO
-               ------------------------------------------------- */
-
             for (
                 const item
                 of productosVenta
             ) {
-
-                /* ---------------------------------------------
-                   BLOQUEAR PRODUCTO
-                   --------------------------------------------- */
 
                 const productoResultado =
                     await client.query(
@@ -2495,11 +2726,8 @@ app.post(
 
                         FOR UPDATE
                         `,
-                        [
-                            item.producto_id
-                        ]
+                        [item.producto_id]
                     );
-
 
                 if (
                     productoResultado.rows.length === 0
@@ -2510,14 +2738,8 @@ app.post(
                     );
                 }
 
-
                 const producto =
                     productoResultado.rows[0];
-
-
-                /* ---------------------------------------------
-                   VERIFICAR PRODUCTO ACTIVO
-                   --------------------------------------------- */
 
                 if (
                     !producto.activo
@@ -2527,11 +2749,6 @@ app.post(
                         `El producto "${producto.nombre}" está inactivo.`
                     );
                 }
-
-
-                /* ---------------------------------------------
-                   VERIFICAR STOCK
-                   --------------------------------------------- */
 
                 const stockActual =
                     Number(
@@ -2543,7 +2760,6 @@ app.post(
                         item.cantidad
                     );
 
-
                 if (
                     cantidadSolicitada >
                     stockActual
@@ -2553,11 +2769,6 @@ app.post(
                         `Stock insuficiente para "${producto.nombre}". Disponible: ${stockActual}. Solicitado: ${cantidadSolicitada}.`
                     );
                 }
-
-
-                /* ---------------------------------------------
-                   PRECIOS DESDE LA BASE DE DATOS
-                   --------------------------------------------- */
 
                 const precioVenta =
                     Number(
@@ -2570,11 +2781,9 @@ app.post(
                         0
                     );
 
-
                 const subtotal =
                     precioVenta *
                     cantidadSolicitada;
-
 
                 const ganancia =
                     (
@@ -2582,11 +2791,6 @@ app.post(
                         costoUnitario
                     ) *
                     cantidadSolicitada;
-
-
-                /* ---------------------------------------------
-                   GUARDAR DETALLE DE VENTA
-                   --------------------------------------------- */
 
                 const detalleResultado =
                     await client.query(
@@ -2624,7 +2828,6 @@ app.post(
                         ]
                     );
 
-
                 detallesGuardados.push({
 
                     ...detalleResultado.rows[0],
@@ -2635,11 +2838,6 @@ app.post(
                     codigo:
                         producto.codigo
                 });
-
-
-                /* ---------------------------------------------
-                   DESCONTAR STOCK
-                   --------------------------------------------- */
 
                 const stockResultado =
                     await client.query(
@@ -2655,7 +2853,6 @@ app.post(
 
                         WHERE
                             id = $2
-
                             AND cantidad >= $1
 
                         RETURNING
@@ -2669,7 +2866,6 @@ app.post(
                         ]
                     );
 
-
                 if (
                     stockResultado.rows.length === 0
                 ) {
@@ -2678,11 +2874,6 @@ app.post(
                         `No fue posible actualizar el stock de "${producto.nombre}".`
                     );
                 }
-
-
-                /* ---------------------------------------------
-                   MOVIMIENTO DE INVENTARIO
-                   --------------------------------------------- */
 
                 await client.query(
                     `
@@ -2707,32 +2898,17 @@ app.post(
                     `,
                     [
                         producto.id,
-
                         "VENTA",
-
                         cantidadSolicitada,
-
                         "Salida de inventario por venta",
-
                         "VENTA",
-
                         venta.id
                     ]
                 );
 
-
-                /* ---------------------------------------------
-                   ACUMULAR TOTAL
-                   --------------------------------------------- */
-
                 totalVenta +=
                     subtotal;
             }
-
-
-            /* -------------------------------------------------
-               ACTUALIZAR TOTAL
-               ------------------------------------------------- */
 
             const ventaActualizada =
                 await client.query(
@@ -2758,92 +2934,57 @@ app.post(
                     ]
                 );
 
-
-            /* -------------------------------------------------
-               CONFIRMAR TRANSACCIÓN
-               ------------------------------------------------- */
-
             await client.query(
                 "COMMIT"
             );
 
-
-            /* -------------------------------------------------
-               CONSOLA
-               ------------------------------------------------- */
-
             console.log("");
-
             console.log(
                 "========================================"
             );
-
             console.log(
                 "💰 VENTA REGISTRADA"
             );
-
             console.log(
                 "========================================"
             );
-
             console.log(
                 "ID:",
                 venta.id
             );
-
             console.log(
                 "Total:",
                 totalVenta
             );
-
             console.log(
                 "Productos:",
                 productosVenta.length
             );
-
             console.log(
                 "========================================"
             );
-
             console.log("");
 
-
-            /* -------------------------------------------------
-               RESPUESTA
-               ------------------------------------------------- */
-
             res.status(201).json({
-
                 mensaje:
                     "Venta registrada correctamente.",
 
                 venta: {
                     ...ventaActualizada.rows[0],
-
                     total:
-                        Number(
-                            totalVenta
-                        )
+                        Number(totalVenta)
                 },
 
                 detalles:
                     detallesGuardados
             });
 
-
         } catch (error) {
 
-
-            /* -------------------------------------------------
-               ROLLBACK
-               ------------------------------------------------- */
-
             try {
-
                 await client.query(
                     "ROLLBACK"
                 );
-
             } catch (
                 rollbackError
             ) {
@@ -2854,58 +2995,39 @@ app.post(
                 );
             }
 
-
-            /* -------------------------------------------------
-               MOSTRAR ERROR
-               ------------------------------------------------- */
-
             console.error("");
-
             console.error(
                 "========================================"
             );
-
             console.error(
                 "❌ ERROR REGISTRANDO VENTA"
             );
-
             console.error(
                 "========================================"
             );
-
             console.error(
                 "Mensaje:",
                 error.message
             );
-
             console.error(
                 "Código:",
                 error.code
             );
-
             console.error(
                 "Detalle:",
                 error.detail
             );
-
             console.error(
                 "Hint:",
                 error.hint
             );
-
             console.error(
                 "Error completo:",
                 error
             );
-
             console.error(
                 "========================================"
             );
-
-
-            /* -------------------------------------------------
-               ERRORES CONTROLADOS
-               ------------------------------------------------- */
 
             if (
                 error.message &&
@@ -2913,15 +3035,12 @@ app.post(
                     error.message.includes(
                         "Stock insuficiente"
                     ) ||
-
                     error.message.includes(
                         "no existe"
                     ) ||
-
                     error.message.includes(
                         "está inactivo"
                     ) ||
-
                     error.message.includes(
                         "No fue posible actualizar"
                     )
@@ -2934,11 +3053,6 @@ app.post(
                 });
             }
 
-
-            /* -------------------------------------------------
-               ERROR CLAVE FORÁNEA
-               ------------------------------------------------- */
-
             if (
                 error.code === "23503"
             ) {
@@ -2948,11 +3062,6 @@ app.post(
                         "El producto seleccionado no existe."
                 });
             }
-
-
-            /* -------------------------------------------------
-               ERROR CAMPO OBLIGATORIO
-               ------------------------------------------------- */
 
             if (
                 error.code === "23502"
@@ -2966,11 +3075,6 @@ app.post(
                 });
             }
 
-
-            /* -------------------------------------------------
-               ERROR FORMATO
-               ------------------------------------------------- */
-
             if (
                 error.code === "22P02"
             ) {
@@ -2981,17 +3085,11 @@ app.post(
                 });
             }
 
-
-            /* -------------------------------------------------
-               ERROR GENERAL
-               ------------------------------------------------- */
-
             res.status(500).json({
                 error:
                     error.message ||
                     "Error registrando venta."
             });
-
 
         } finally {
 
@@ -3000,21 +3098,18 @@ app.post(
     }
 );
 
+
 /* =========================================================
-   RUTAS DE INVENTARIO
+   INVENTARIO
    ========================================================= */
-
-/*
-   GET /api/inventario
-
-   Obtiene el inventario actual desde productos_lunas.
-   Calcula automáticamente el estado del stock.
-*/
 
 app.get(
     "/api/inventario",
+    requireAuth,
     async (req, res) => {
+
         try {
+
             const resultado =
                 await pool.query(
                     `
@@ -3076,17 +3171,11 @@ app.get(
 );
 
 
-/*
-   GET /api/inventario/movimientos
-
-   Obtiene todos los movimientos de inventario:
-   COMPRA = entrada
-   VENTA  = salida
-*/
-
 app.get(
     "/api/inventario/movimientos",
+    requireAuth,
     async (req, res) => {
+
         try {
 
             const resultado =
@@ -3109,7 +3198,8 @@ app.get(
                     FROM movimientos_inventario mi
 
                     INNER JOIN productos_lunas p
-                        ON p.id = mi.producto_id
+                        ON p.id =
+                        mi.producto_id
 
                     ORDER BY
                         mi.created_at DESC,
@@ -3137,69 +3227,14 @@ app.get(
     }
 );
 
+
 /* =========================================================
-   RUTAS DE PROVEEDORES
+   PROVEEDORES
    ========================================================= */
 
-/*
-   GET /api/proveedores
-   Obtener todos los proveedores
-*/
-app.get(
-    "/api/proveedores",
-    async (req, res) => {
-
-        try {
-
-            const resultado =
-                await pool.query(
-                    `
-                    SELECT
-                        id,
-                        nombre,
-                        empresa,
-                        telefono,
-                        correo,
-                        direccion,
-                        observaciones,
-                        activo,
-                        created_at
-
-                    FROM proveedores
-
-                    ORDER BY
-                        activo DESC,
-                        nombre ASC
-                    `
-                );
-
-            res.json(
-                resultado.rows
-            );
-
-        } catch (error) {
-
-            console.error(
-                "❌ Error obteniendo proveedores:",
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    error.message ||
-                    "Error obteniendo proveedores."
-            });
-        }
-    }
-);
-
-
-/*
-   GET /api/proveedores/:id
-   Obtener un proveedor específico
-*/
 app.get(
     "/api/proveedores/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3262,12 +3297,9 @@ app.get(
 );
 
 
-/*
-   POST /api/proveedores
-   Crear proveedor
-*/
 app.post(
     "/api/proveedores",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3280,7 +3312,6 @@ app.post(
                 direccion,
                 observaciones
             } = req.body;
-
 
             const nombreLimpio =
                 String(
@@ -3312,10 +3343,6 @@ app.post(
                     observaciones || ""
                 ).trim();
 
-
-            /*
-               El nombre es obligatorio
-            */
             if (!nombreLimpio) {
 
                 return res.status(400).json({
@@ -3323,7 +3350,6 @@ app.post(
                         "El nombre del proveedor es obligatorio."
                 });
             }
-
 
             const resultado =
                 await pool.query(
@@ -3371,7 +3397,6 @@ app.post(
                     ]
                 );
 
-
             res.status(201).json({
                 mensaje:
                     "Proveedor creado correctamente.",
@@ -3396,12 +3421,9 @@ app.post(
 );
 
 
-/*
-   PUT /api/proveedores/:id
-   Editar proveedor
-*/
 app.put(
     "/api/proveedores/:id",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3418,7 +3440,6 @@ app.put(
                 direccion,
                 observaciones
             } = req.body;
-
 
             const nombreLimpio =
                 String(
@@ -3450,7 +3471,6 @@ app.put(
                     observaciones || ""
                 ).trim();
 
-
             if (!nombreLimpio) {
 
                 return res.status(400).json({
@@ -3458,7 +3478,6 @@ app.put(
                         "El nombre del proveedor es obligatorio."
                 });
             }
-
 
             const resultado =
                 await pool.query(
@@ -3497,7 +3516,6 @@ app.put(
                     ]
                 );
 
-
             if (
                 resultado.rows.length === 0
             ) {
@@ -3507,7 +3525,6 @@ app.put(
                         "Proveedor no encontrado."
                 });
             }
-
 
             res.json({
                 mensaje:
@@ -3533,12 +3550,9 @@ app.put(
 );
 
 
-/*
-   PATCH /api/proveedores/:id/activar
-   Activar o desactivar proveedor
-*/
 app.patch(
     "/api/proveedores/:id/activar",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3551,7 +3565,6 @@ app.patch(
                 activo
             } = req.body;
 
-
             if (
                 typeof activo !== "boolean"
             ) {
@@ -3561,7 +3574,6 @@ app.patch(
                         "El campo activo debe ser true o false."
                 });
             }
-
 
             const resultado =
                 await pool.query(
@@ -3590,7 +3602,6 @@ app.patch(
                     ]
                 );
 
-
             if (
                 resultado.rows.length === 0
             ) {
@@ -3600,7 +3611,6 @@ app.patch(
                         "Proveedor no encontrado."
                 });
             }
-
 
             res.json({
                 mensaje:
@@ -3627,18 +3637,14 @@ app.patch(
     }
 );
 
+
 /* =========================================================
-   RUTAS DE REPORTES
+   REPORTES
    ========================================================= */
 
-
-/*
-   GET /api/reportes/resumen
-
-   Resumen general del negocio.
-*/
 app.get(
     "/api/reportes/resumen",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3647,10 +3653,6 @@ app.get(
                 await pool.query(
                     `
                     SELECT
-
-                        /* ==============================
-                           VENTAS
-                           ============================== */
 
                         (
                             SELECT
@@ -3661,17 +3663,11 @@ app.get(
                             FROM ventas
                         ) AS total_ventas,
 
-
                         (
                             SELECT
                                 COUNT(*)
                             FROM ventas
                         ) AS cantidad_ventas,
-
-
-                        /* ==============================
-                           GANANCIA
-                           ============================== */
 
                         (
                             SELECT
@@ -3682,11 +3678,6 @@ app.get(
                             FROM detalle_ventas
                         ) AS ganancia_total,
 
-
-                        /* ==============================
-                           COMPRAS
-                           ============================== */
-
                         (
                             SELECT
                                 COALESCE(
@@ -3696,17 +3687,11 @@ app.get(
                             FROM compras
                         ) AS total_compras,
 
-
                         (
                             SELECT
                                 COUNT(*)
                             FROM compras
                         ) AS cantidad_compras,
-
-
-                        /* ==============================
-                           PRODUCTOS VENDIDOS
-                           ============================== */
 
                         (
                             SELECT
@@ -3717,11 +3702,6 @@ app.get(
                             FROM detalle_ventas
                         ) AS productos_vendidos,
 
-
-                        /* ==============================
-                           PRODUCTOS COMPRADOS
-                           ============================== */
-
                         (
                             SELECT
                                 COALESCE(
@@ -3731,18 +3711,12 @@ app.get(
                             FROM detalle_compras
                         ) AS productos_comprados,
 
-
-                        /* ==============================
-                           INVENTARIO
-                           ============================== */
-
                         (
                             SELECT
                                 COUNT(*)
                             FROM productos_lunas
                             WHERE activo = TRUE
                         ) AS productos_activos,
-
 
                         (
                             SELECT
@@ -3754,7 +3728,6 @@ app.get(
                             WHERE activo = TRUE
                         ) AS unidades_inventario,
 
-
                         (
                             SELECT
                                 COUNT(*)
@@ -3765,7 +3738,6 @@ app.get(
                                 AND cantidad > 0
                         ) AS productos_bajos,
 
-
                         (
                             SELECT
                                 COUNT(*)
@@ -3774,11 +3746,6 @@ app.get(
                                 activo = TRUE
                                 AND cantidad <= 0
                         ) AS productos_agotados,
-
-
-                        /* ==============================
-                           VALOR DEL INVENTARIO
-                           ============================== */
 
                         (
                             SELECT
@@ -3791,17 +3758,13 @@ app.get(
                                 )
                             FROM productos_lunas
                             WHERE activo = TRUE
-                        ) AS valor_inventario;
-
-
+                        ) AS valor_inventario
                     `
                 );
-
 
             res.json(
                 resultado.rows[0]
             );
-
 
         } catch (error) {
 
@@ -3810,28 +3773,19 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
-
                 error:
                     error.message ||
                     "Error obteniendo el resumen."
-
             });
-
         }
-
     }
 );
 
 
-/*
-   GET /api/reportes/ventas
-
-   Reporte detallado de ventas.
-*/
 app.get(
     "/api/reportes/ventas",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3865,7 +3819,6 @@ app.get(
                             0
                         ) AS ganancia
 
-
                     FROM ventas v
 
                     LEFT JOIN detalle_ventas dv
@@ -3884,11 +3837,9 @@ app.get(
                     `
                 );
 
-
             res.json(
                 resultado.rows
             );
-
 
         } catch (error) {
 
@@ -3897,28 +3848,19 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
-
                 error:
                     error.message ||
                     "Error obteniendo ventas."
-
             });
-
         }
-
     }
 );
 
 
-/*
-   GET /api/reportes/productos-vendidos
-
-   Productos que más se han vendido.
-*/
 app.get(
     "/api/reportes/productos-vendidos",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -3953,7 +3895,6 @@ app.get(
                             0
                         ) AS ganancia
 
-
                     FROM detalle_ventas dv
 
                     INNER JOIN productos_lunas p
@@ -3970,11 +3911,9 @@ app.get(
                     `
                 );
 
-
             res.json(
                 resultado.rows
             );
-
 
         } catch (error) {
 
@@ -3983,28 +3922,19 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
-
                 error:
                     error.message ||
                     "Error obteniendo productos vendidos."
-
             });
-
         }
-
     }
 );
 
 
-/*
-   GET /api/reportes/compras
-
-   Reporte detallado de compras.
-*/
 app.get(
     "/api/reportes/compras",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -4031,7 +3961,6 @@ app.get(
                             0
                         ) AS unidades
 
-
                     FROM compras c
 
                     LEFT JOIN detalle_compras dc
@@ -4050,11 +3979,9 @@ app.get(
                     `
                 );
 
-
             res.json(
                 resultado.rows
             );
-
 
         } catch (error) {
 
@@ -4063,28 +3990,19 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
-
                 error:
                     error.message ||
                     "Error obteniendo compras."
-
             });
-
         }
-
     }
 );
 
 
-/*
-   GET /api/reportes/movimientos
-
-   Movimientos de inventario.
-*/
 app.get(
     "/api/reportes/movimientos",
+    requireAuth,
     async (req, res) => {
 
         try {
@@ -4106,7 +4024,6 @@ app.get(
                         p.nombre AS producto_nombre,
                         p.codigo AS producto_codigo
 
-
                     FROM movimientos_inventario mi
 
                     INNER JOIN productos_lunas p
@@ -4118,11 +4035,9 @@ app.get(
                     `
                 );
 
-
             res.json(
                 resultado.rows
             );
-
 
         } catch (error) {
 
@@ -4131,23 +4046,27 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
-
                 error:
                     error.message ||
                     "Error obteniendo movimientos."
-
             });
-
         }
-
     }
 );
 
+
 /* =========================================================
-   RUTAS HTML
+   RUTAS HTML PÚBLICAS
    ========================================================= */
+
+/*
+   IMPORTANTE:
+
+   La "/" vuelve a ser el catálogo público.
+
+   Se sirve index.html.
+*/
 
 app.get(
     "/",
@@ -4157,46 +4076,16 @@ app.get(
             path.join(
                 __dirname,
                 "public",
-                "login.html"
+                "index.html"
             )
         );
     }
 );
 
 
-/* =========================================================
-   RUTAS HTML
-   ========================================================= */
-
-app.get(
-    "/",
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                "public",
-                "login.html"
-            )
-        );
-    }
-);
-
-
-app.get(
-    "/admin.html",
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                "public",
-                "admin.html"
-            )
-        );
-    }
-);
-
+/*
+   Login público.
+*/
 
 app.get(
     "/login.html",
@@ -4210,6 +4099,248 @@ app.get(
             )
         );
     }
+);
+
+
+/* =========================================================
+   RUTAS HTML PROTEGIDAS
+   ========================================================= */
+
+/*
+   /admin
+*/
+
+app.get(
+    "/admin",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.html"
+            )
+        );
+    }
+);
+
+
+/*
+   /admin.html
+*/
+
+app.get(
+    "/admin.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.html"
+            )
+        );
+    }
+);
+
+
+/*
+   PRODUCTOS
+*/
+
+app.get(
+    "/productos.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "productos.html"
+            )
+        );
+    }
+);
+
+
+/*
+   COMPRAS
+*/
+
+app.get(
+    "/compras.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "compras.html"
+            )
+        );
+    }
+);
+
+
+/*
+   VENTAS
+*/
+
+app.get(
+    "/ventas.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "ventas.html"
+            )
+        );
+    }
+);
+
+
+/*
+   HISTORIAL
+*/
+
+app.get(
+    "/historial.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "historial.html"
+            )
+        );
+    }
+);
+
+
+/*
+   INVENTARIO
+*/
+
+app.get(
+    "/inventario.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "inventario.html"
+            )
+        );
+    }
+);
+
+
+/*
+   PROVEEDORES
+*/
+
+app.get(
+    "/proveedores.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "proveedores.html"
+            )
+        );
+    }
+);
+
+
+/*
+   REPORTES
+*/
+
+app.get(
+    "/reportes.html",
+    requireAuth,
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "reportes.html"
+            )
+        );
+    }
+);
+
+
+/* =========================================================
+   ARCHIVOS ESTÁTICOS
+   ========================================================= */
+
+/*
+   IMPORTANTE:
+
+   Este middleware queda DESPUÉS de las rutas HTML
+   protegidas.
+
+   De esta manera /admin.html, /productos.html,
+   /compras.html, etc. pasan primero por requireAuth.
+*/
+
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "public"
+        )
+    )
+);
+
+
+/* =========================================================
+   LIMPIEZA AUTOMÁTICA DE SESIONES
+   ========================================================= */
+
+setInterval(
+    () => {
+
+        const ahora =
+            Date.now();
+
+        for (
+            const [
+                token,
+                sesion
+            ]
+            of sesiones.entries()
+        ) {
+
+            if (
+                ahora >
+                sesion.expiresAt
+            ) {
+
+                sesiones.delete(
+                    token
+                );
+            }
+        }
+
+    },
+    15 * 60 * 1000
 );
 
 
@@ -4302,6 +4433,22 @@ app.listen(
 
         console.log(
             `🌐 http://localhost:${PORT}`
+        );
+
+        console.log(
+            "🔐 Sistema de autenticación activo"
+        );
+
+        console.log(
+            `👤 ADMIN_USER configurado: ${!!ADMIN_USER}`
+        );
+
+        console.log(
+            `🔑 ADMIN_PASSWORD configurado: ${!!ADMIN_PASSWORD}`
+        );
+
+        console.log(
+            `🔒 AUTH_SECRET configurado: ${!!AUTH_SECRET}`
         );
 
         console.log(
