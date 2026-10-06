@@ -21,7 +21,9 @@
          QR CODE
     ====================================================== -->
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    ></script>
 
     <style>
 
@@ -163,6 +165,12 @@
                 rgba(239, 68, 68, 0.25);
         }
 
+        .logout-btn:disabled {
+            opacity: 0.65;
+            cursor: wait;
+            transform: none;
+        }
+
         /* =====================================================
            CONTENIDO
         ====================================================== */
@@ -252,6 +260,8 @@
 
             background:
                 rgba(56, 189, 248, 0.10);
+
+            pointer-events: none;
         }
 
         .module:hover {
@@ -845,7 +855,9 @@
 
 
         <button
+            id="logoutButton"
             class="logout-btn"
+            type="button"
             onclick="logout()"
         >
             Cerrar sesión
@@ -897,7 +909,10 @@
                     e imágenes.
                 </p>
 
-                <button onclick="abrirProductos()">
+                <button
+                    type="button"
+                    onclick="abrirProductos()"
+                >
                     Administrar productos
                 </button>
 
@@ -924,7 +939,10 @@
                     público de Lunas de Octubre.
                 </p>
 
-                <button onclick="abrirQR()">
+                <button
+                    type="button"
+                    onclick="abrirQR()"
+                >
                     Generar código QR
                 </button>
 
@@ -961,7 +979,7 @@
 
 
             <!-- =================================================
-                 VENTAS — ACTIVO
+                 VENTAS
             ================================================== -->
 
             <article class="module">
@@ -1002,7 +1020,7 @@
 
 
             <!-- =================================================
-                 INVENTARIO — ACTIVO
+                 INVENTARIO
             ================================================== -->
 
             <article class="module">
@@ -1036,52 +1054,56 @@
 
             <article class="module">
 
-               <div class="module-icon">
-              👥
-              </div>
+                <div class="module-icon">
+                    👥
+                </div>
 
-              <h3>
-             Proveedores
-             </h3>
+                <h3>
+                    Proveedores
+                </h3>
 
-             <p>
-             Registra, consulta y administra tus proveedores.
-             </p>
+                <p>
+                    Registra, consulta y administra
+                    tus proveedores.
+                </p>
 
-              <button
-             type="button"
-              onclick="abrirProveedores()"
-              >
-              Abrir proveedores
-              </button>
+                <button
+                    type="button"
+                    onclick="abrirProveedores()"
+                >
+                    Abrir proveedores
+                </button>
+
             </article>
 
 
             <!-- =================================================
                  REPORTES
             ================================================== -->
-         <article class="module">
 
-               <div class="module-icon">
-              📊
-              </div>
+            <article class="module">
 
-               <h3>
-               Reportes
-               </h3>
+                <div class="module-icon">
+                    📊
+                </div>
+
+                <h3>
+                    Reportes
+                </h3>
 
                 <p>
-                Analiza ventas, compras, ganancias e inventario.
-                 </p>
+                    Analiza ventas, compras,
+                    ganancias e inventario.
+                </p>
 
                 <button
-                type="button"
-               onclick="abrirReportes()"
-               >
-              Abrir reportes
-              </button>
+                    type="button"
+                    onclick="abrirReportes()"
+                >
+                    Abrir reportes
+                </button>
+
             </article>
-            
 
 
         </section>
@@ -1106,6 +1128,7 @@
 
             <button
                 class="qr-close"
+                type="button"
                 onclick="cerrarQR()"
                 aria-label="Cerrar"
             >
@@ -1141,6 +1164,7 @@
 
                 <button
                     class="qr-action qr-download"
+                    type="button"
                     onclick="descargarQR()"
                 >
                     Descargar QR
@@ -1149,6 +1173,7 @@
 
                 <button
                     class="qr-action qr-open"
+                    type="button"
                     onclick="abrirCatalogo()"
                 >
                     Abrir catálogo
@@ -1185,134 +1210,270 @@
     <script>
 
         /* =====================================================
-           SEGURIDAD DE ACCESO ACTUAL
-        ===================================================== */
+           SEGURIDAD REAL DEL PANEL
+           LA SESIÓN SE COMPRUEBA EN EL SERVIDOR
+        ====================================================== */
 
-        if (!localStorage.getItem("login")) {
+        let sesionVerificada = false;
 
-            window.location.href = "/login.html";
+
+        async function verificarSesion() {
+
+            try {
+
+                const respuesta =
+                    await fetch(
+                        "/api/auth/me",
+                        {
+                            method: "GET",
+                            credentials: "include",
+                            cache: "no-store"
+                        }
+                    );
+
+
+                if (!respuesta.ok) {
+
+                    window.location.replace(
+                        "/login.html"
+                    );
+
+                    return;
+
+                }
+
+
+                const datos =
+                    await respuesta.json();
+
+
+                if (
+                    !datos ||
+                    !datos.authenticated
+                ) {
+
+                    window.location.replace(
+                        "/login.html"
+                    );
+
+                    return;
+
+                }
+
+
+                sesionVerificada = true;
+
+
+            } catch (error) {
+
+                console.error(
+                    "Error verificando sesión:",
+                    error
+                );
+
+                window.location.replace(
+                    "/login.html"
+                );
+
+            }
 
         }
 
 
         /* =====================================================
-           CERRAR SESIÓN
-        ===================================================== */
+           VERIFICAR SESIÓN AL CARGAR
+        ====================================================== */
 
-        function logout() {
+        verificarSesion();
 
-            localStorage.removeItem("login");
 
-            localStorage.removeItem("lunasAdmin");
+        /* =====================================================
+           CERRAR SESIÓN REAL
+        ====================================================== */
 
-            window.location.href = "/login.html";
+        async function logout() {
+
+            const boton =
+                document.getElementById(
+                    "logoutButton"
+                );
+
+
+            if (boton) {
+
+                boton.disabled = true;
+
+                boton.textContent =
+                    "Cerrando sesión...";
+
+            }
+
+
+            try {
+
+                await fetch(
+                    "/api/auth/logout",
+                    {
+                        method: "POST",
+                        credentials: "include"
+                    }
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Error cerrando sesión:",
+                    error
+                );
+
+            } finally {
+
+                localStorage.removeItem(
+                    "login"
+                );
+
+                localStorage.removeItem(
+                    "lunasAdmin"
+                );
+
+                window.location.replace(
+                    "/login.html"
+                );
+
+            }
 
         }
 
 
         /* =====================================================
            PRODUCTOS
-        ===================================================== */
+        ====================================================== */
 
         function abrirProductos() {
 
-            window.location.href = "/productos.html";
+            window.location.href =
+                "/productos.html";
 
         }
 
 
         /* =====================================================
            COMPRAS
-        ===================================================== */
+        ====================================================== */
 
         function abrirCompras() {
 
-            window.location.href = "/compras.html";
+            window.location.href =
+                "/compras.html";
 
         }
 
 
         /* =====================================================
            VENTAS
-        ===================================================== */
+        ====================================================== */
 
         function abrirVentas() {
 
-            window.location.href = "/ventas.html";
+            window.location.href =
+                "/ventas.html";
 
         }
 
 
         /* =====================================================
            HISTORIAL DE VENTAS
-        ===================================================== */
+        ====================================================== */
 
         function abrirHistorial() {
 
-            window.location.href = "/historial.html";
+            window.location.href =
+                "/historial.html";
 
         }
 
 
         /* =====================================================
            INVENTARIO
-        ===================================================== */
+        ====================================================== */
 
         function abrirInventario() {
 
-            window.location.href = "/inventario.html";
+            window.location.href =
+                "/inventario.html";
 
         }
 
-        /* =========================================================
-          ABRIR PROVEEDORES
-        ========================================================= */
+
+        /* =====================================================
+           PROVEEDORES
+        ====================================================== */
 
         function abrirProveedores() {
 
-         window.location.href = "/proveedores.html";
+            window.location.href =
+                "/proveedores.html";
 
         }
 
-        /* =========================================================
-         ABRIR REPORTES
-        ========================================================= */
+
+        /* =====================================================
+           REPORTES
+        ====================================================== */
 
         function abrirReportes() {
 
-          window.location.href =
-          "/reportes.html";
+            window.location.href =
+                "/reportes.html";
 
         }
 
 
         /* =====================================================
            CONFIGURACIÓN DEL CATÁLOGO
-        ===================================================== */
+        ====================================================== */
 
         const URL_CATALOGO =
             "https://lunas-octubre.onrender.com/";
+
 
         let qrGenerado = false;
 
 
         /* =====================================================
            ABRIR QR
-        ===================================================== */
+        ====================================================== */
 
         function abrirQR() {
 
+            if (!sesionVerificada) {
+
+                return;
+
+            }
+
+
             const overlay =
-                document.getElementById("qrOverlay");
+                document.getElementById(
+                    "qrOverlay"
+                );
+
 
             const qrContainer =
-                document.getElementById("qrcode");
+                document.getElementById(
+                    "qrcode"
+                );
+
 
             const status =
-                document.getElementById("qrStatus");
+                document.getElementById(
+                    "qrStatus"
+                );
 
 
-            overlay.classList.add("active");
+            overlay.classList.add(
+                "active"
+            );
 
 
             if (!qrGenerado) {
@@ -1325,18 +1486,25 @@
                     qrContainer,
 
                     {
-                        text: URL_CATALOGO,
 
-                        width: 230,
+                        text:
+                            URL_CATALOGO,
 
-                        height: 230,
+                        width:
+                            230,
 
-                        colorDark: "#111827",
+                        height:
+                            230,
 
-                        colorLight: "#ffffff",
+                        colorDark:
+                            "#111827",
+
+                        colorLight:
+                            "#ffffff",
 
                         correctLevel:
                             QRCode.CorrectLevel.H
+
                     }
 
                 );
@@ -1355,13 +1523,17 @@
 
         /* =====================================================
            CERRAR QR
-        ===================================================== */
+        ====================================================== */
 
         function cerrarQR() {
 
             document
-                .getElementById("qrOverlay")
-                .classList.remove("active");
+                .getElementById(
+                    "qrOverlay"
+                )
+                .classList.remove(
+                    "active"
+                );
 
         }
 
@@ -1369,7 +1541,8 @@
         function cerrarQRDesdeFondo(event) {
 
             if (
-                event.target.id === "qrOverlay"
+                event.target.id ===
+                "qrOverlay"
             ) {
 
                 cerrarQR();
@@ -1381,37 +1554,47 @@
 
         /* =====================================================
            ABRIR CATÁLOGO
-        ===================================================== */
+        ====================================================== */
 
         function abrirCatalogo() {
 
             window.open(
                 URL_CATALOGO,
-                "_blank"
+                "_blank",
+                "noopener,noreferrer"
             );
 
         }
 
 
         /* =====================================================
-           DESCARGAR QR COMO PNG ELEGANTE
-        ===================================================== */
+           DESCARGAR QR COMO PNG
+        ====================================================== */
 
         function descargarQR() {
 
             const qrContainer =
-                document.getElementById("qrcode");
+                document.getElementById(
+                    "qrcode"
+                );
 
 
             const qrCanvas =
-                qrContainer.querySelector("canvas");
+                qrContainer.querySelector(
+                    "canvas"
+                );
 
 
             const qrImage =
-                qrContainer.querySelector("img");
+                qrContainer.querySelector(
+                    "img"
+                );
 
 
-            if (!qrCanvas && !qrImage) {
+            if (
+                !qrCanvas &&
+                !qrImage
+            ) {
 
                 document.getElementById(
                     "qrStatus"
@@ -1428,11 +1611,15 @@
             ================================================== */
 
             const canvas =
-                document.createElement("canvas");
+                document.createElement(
+                    "canvas"
+                );
 
 
             const ctx =
-                canvas.getContext("2d");
+                canvas.getContext(
+                    "2d"
+                );
 
 
             const ancho = 1000;
@@ -1440,9 +1627,11 @@
             const alto = 1250;
 
 
-            canvas.width = ancho;
+            canvas.width =
+                ancho;
 
-            canvas.height = alto;
+            canvas.height =
+                alto;
 
 
             /* =================================================
@@ -1476,7 +1665,8 @@
             );
 
 
-            ctx.fillStyle = fondo;
+            ctx.fillStyle =
+                fondo;
 
 
             ctx.fillRect(
@@ -1488,7 +1678,7 @@
 
 
             /* =================================================
-               DESTELLOS
+               DESTELLO AZUL
             ================================================== */
 
             const brillo1 =
@@ -1514,7 +1704,8 @@
             );
 
 
-            ctx.fillStyle = brillo1;
+            ctx.fillStyle =
+                brillo1;
 
 
             ctx.fillRect(
@@ -1524,6 +1715,10 @@
                 alto
             );
 
+
+            /* =================================================
+               DESTELLO MORADO
+            ================================================== */
 
             const brillo2 =
                 ctx.createRadialGradient(
@@ -1548,7 +1743,8 @@
             );
 
 
-            ctx.fillStyle = brillo2;
+            ctx.fillStyle =
+                brillo2;
 
 
             ctx.fillRect(
@@ -1567,7 +1763,8 @@
                 "#facc15";
 
 
-            ctx.lineWidth = 8;
+            ctx.lineWidth =
+                8;
 
 
             ctx.strokeRect(
@@ -1624,7 +1821,8 @@
                TÍTULO
             ================================================== */
 
-            ctx.textAlign = "center";
+            ctx.textAlign =
+                "center";
 
 
             ctx.fillStyle =
@@ -1661,26 +1859,36 @@
                ÁREA BLANCA DEL QR
             ================================================== */
 
-            const qrX = 170;
+            const qrX =
+                170;
 
-            const qrY = 375;
 
-            const qrSize = 660;
+            const qrY =
+                375;
+
+
+            const qrSize =
+                660;
 
 
             ctx.fillStyle =
                 "#ffffff";
 
 
-            /* Sombra */
+            /* =================================================
+               SOMBRA
+            ================================================== */
 
             ctx.shadowColor =
                 "rgba(0,0,0,0.45)";
 
 
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur =
+                30;
 
-            ctx.shadowOffsetY = 12;
+
+            ctx.shadowOffsetY =
+                12;
 
 
             ctx.fillRect(
@@ -1695,9 +1903,12 @@
                 "transparent";
 
 
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur =
+                0;
 
-            ctx.shadowOffsetY = 0;
+
+            ctx.shadowOffsetY =
+                0;
 
 
             /* =================================================
@@ -1766,7 +1977,9 @@
             ================================================== */
 
             const enlace =
-                document.createElement("a");
+                document.createElement(
+                    "a"
+                );
 
 
             enlace.download =
@@ -1792,14 +2005,15 @@
 
         /* =====================================================
            TECLA ESCAPE
-        ===================================================== */
+        ====================================================== */
 
         document.addEventListener(
             "keydown",
             function(event) {
 
                 if (
-                    event.key === "Escape"
+                    event.key ===
+                    "Escape"
                 ) {
 
                     cerrarQR();
@@ -1808,6 +2022,27 @@
 
             }
         );
+
+
+        /* =====================================================
+           EVITAR MOSTRAR EL PANEL MIENTRAS SE VERIFICA
+        ====================================================== */
+
+        document.documentElement.style.visibility =
+            "hidden";
+
+
+        verificarSesion()
+            .finally(function() {
+
+                if (sesionVerificada) {
+
+                    document.documentElement.style.visibility =
+                        "visible";
+
+                }
+
+            });
 
     </script>
 
