@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <meta
+        name="description"
+        content="Control de inventario - Lunas de Octubre"
+    >
+
+    <title>Inventario | Lunas de Octubre</title>
+
+    <link
+        rel="stylesheet"
+        href="/inventario.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <header class="encabezado">
+
+        <div class="encabezado-izquierdo">
+
+            <button
+                type="button"
+                class="btn-volver"
+                onclick="volverAdmin()"
+            >
+                ←
+            </button>
+
+            <div class="titulo-seccion">
+
+                <span class="titulo-icono">
+                    📦
+                </span>
+
+                <div>
+
+                    <h1>
+                        Inventario
+                    </h1>
+
+                    <p>
+                        Control de existencias y movimientos
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="encabezado-derecho">
+
+            <span
+                id="fechaActual"
+                class="fecha-actual"
+            >
+                Cargando fecha...
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+         ===================================================== -->
+
+    <main class="contenedor">
+
+
+        <!-- =================================================
+             TARJETAS DE RESUMEN
+             ================================================= -->
+
+        <section class="resumen-grid">
+
+
+            <!-- TOTAL PRODUCTOS -->
+
+            <article class="resumen-card">
+
+                <div class="resumen-icono">
+                    📦
+                </div>
+
+                <div class="resumen-info">
+
+                    <span>
+                        Productos
+                    </span>
+
+                    <strong id="totalProductos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <!-- UNIDADES -->
+
+            <article class="resumen-card">
+
+                <div class="resumen-icono">
+                    🔢
+                </div>
+
+                <div class="resumen-info">
+
+                    <span>
+                        Unidades
+                    </span>
+
+                    <strong id="totalUnidades">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <!-- STOCK BAJO -->
+
+            <article class="resumen-card alerta">
+
+                <div class="resumen-icono">
+                    ⚠️
+                </div>
+
+                <div class="resumen-info">
+
+                    <span>
+                        Stock bajo
+                    </span>
+
+                    <strong id="productosBajos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <!-- AGOTADOS -->
+
+            <article class="resumen-card agotado">
+
+                <div class="resumen-icono">
+                    🚫
+                </div>
+
+                <div class="resumen-info">
+
+                    <span>
+                        Agotados
+                    </span>
+
+                    <strong id="productosAgotados">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- =================================================
+             ALERTA DE STOCK
+             ================================================= -->
+
+        <section
+            id="panelAlertas"
+            class="panel-alertas"
+        >
+
+            <div class="alerta-titulo">
+
+                <span class="alerta-icono">
+                    ⚠️
+                </span>
+
+                <div>
+
+                    <h2>
+                        Atención de inventario
+                    </h2>
+
+                    <p id="textoAlertas">
+                        No hay productos con stock bajo.
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div id="listaAlertas"></div>
+
+        </section>
+
+
+        <!-- =================================================
+             CONTROL DE INVENTARIO
+             ================================================= -->
+
+        <section class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-etiqueta">
+                        EXISTENCIAS
+                    </span>
+
+                    <h2>
+                        Inventario actual
+                    </h2>
+
+                    <p>
+                        Consulta el stock disponible de todos tus productos.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-recargar"
+                    onclick="cargarInventario()"
+                >
+                    ↻ Actualizar
+                </button>
+
+            </div>
+
+
+            <!-- BUSCADOR Y FILTROS -->
+
+            <div class="controles-inventario">
+
+
+                <div class="buscador">
+
+                    <span class="buscador-icono">
+                        🔎
+                    </span>
+
+                    <input
+                        type="text"
+                        id="buscarInventario"
+                        placeholder="Buscar por producto o código..."
+                        autocomplete="off"
+                    >
+
+                    <button
+                        type="button"
+                        id="limpiarBusqueda"
+                        class="btn-limpiar"
+                        onclick="limpiarBusqueda()"
+                        title="Limpiar búsqueda"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="filtros">
+
+                    <button
+                        type="button"
+                        class="filtro activo"
+                        data-filtro="TODOS"
+                        onclick="cambiarFiltro('TODOS')"
+                    >
+                        Todos
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filtro"
+                        data-filtro="DISPONIBLE"
+                        onclick="cambiarFiltro('DISPONIBLE')"
+                    >
+                        Disponibles
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filtro"
+                        data-filtro="BAJO"
+                        onclick="cambiarFiltro('BAJO')"
+                    >
+                        Stock bajo
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filtro"
+                        data-filtro="AGOTADO"
+                        onclick="cambiarFiltro('AGOTADO')"
+                    >
+                        Agotados
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- CONTADOR -->
+
+            <div class="resultado-info">
+
+                <span id="contadorInventario">
+                    0 productos
+                </span>
+
+            </div>
+
+
+            <!-- TABLA -->
+
+            <div class="tabla-contenedor">
+
+                <table class="tabla-inventario">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Producto
+                            </th>
+
+                            <th>
+                                Código
+                            </th>
+
+                            <th>
+                                Precio compra
+                            </th>
+
+                            <th>
+                                Precio venta
+                            </th>
+
+                            <th>
+                                Stock
+                            </th>
+
+                            <th>
+                                Mínimo
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaInventario">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="estado-tabla"
+                            >
+                                Cargando inventario...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- ESTADO VACÍO -->
+
+            <div
+                id="inventarioVacio"
+                class="estado-vacio oculto"
+            >
+
+                <div class="vacio-icono">
+                    📦
+                </div>
+
+                <h3>
+                    No encontramos productos
+                </h3>
+
+                <p>
+                    Prueba cambiando la búsqueda o el filtro seleccionado.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             MOVIMIENTOS DE INVENTARIO
+             ================================================= -->
+
+        <section class="panel movimientos-panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-etiqueta">
+                        MOVIMIENTOS
+                    </span>
+
+                    <h2>
+                        Historial de inventario
+                    </h2>
+
+                    <p>
+                        Entradas y salidas generadas por compras y ventas.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-recargar"
+                    onclick="cargarMovimientos()"
+                >
+                    ↻ Actualizar
+                </button>
+
+            </div>
+
+
+            <!-- FILTRO DE MOVIMIENTOS -->
+
+            <div class="controles-movimientos">
+
+                <div class="filtros">
+
+                    <button
+                        type="button"
+                        class="filtro-movimiento activo"
+                        data-tipo="TODOS"
+                        onclick="cambiarFiltroMovimiento('TODOS')"
+                    >
+                        Todos
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filtro-movimiento"
+                        data-tipo="COMPRA"
+                        onclick="cambiarFiltroMovimiento('COMPRA')"
+                    >
+                        Entradas
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filtro-movimiento"
+                        data-tipo="VENTA"
+                        onclick="cambiarFiltroMovimiento('VENTA')"
+                    >
+                        Salidas
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABLA DE MOVIMIENTOS -->
+
+            <div class="tabla-contenedor">
+
+                <table class="tabla-movimientos">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Fecha
+                            </th>
+
+                            <th>
+                                Producto
+                            </th>
+
+                            <th>
+                                Tipo
+                            </th>
+
+                            <th>
+                                Cantidad
+                            </th>
+
+                            <th>
+                                Motivo
+                            </th>
+
+                            <th>
+                                Referencia
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaMovimientos">
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="estado-tabla"
+                            >
+                                Cargando movimientos...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- ESTADO VACÍO -->
+
+            <div
+                id="movimientosVacios"
+                class="estado-vacio oculto"
+            >
+
+                <div class="vacio-icono">
+                    📋
+                </div>
+
+                <h3>
+                    No hay movimientos
+                </h3>
+
+                <p>
+                    Los movimientos de compras y ventas aparecerán aquí.
+                </p>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         NOTIFICACIONES
+         ===================================================== -->
+
+    <div
+        id="notificacion"
+        class="notificacion"
+    >
+
+        <div
+            id="notificacionIcono"
+            class="notificacion-icono"
+        >
+            ✓
+        </div>
+
+        <div class="notificacion-contenido">
+
+            <strong id="notificacionTitulo">
+                Información
+            </strong>
+
+            <p id="notificacionMensaje">
+                Operación realizada.
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            onclick="cerrarNotificacion()"
+            class="notificacion-cerrar"
+        >
+            ×
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+         ===================================================== -->
+
+    <script src="/inventario.js"></script>
+
+</body>
+
+</html>

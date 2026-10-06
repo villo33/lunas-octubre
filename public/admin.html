@@ -1002,13 +1002,13 @@
 
 
             <!-- =================================================
-                 INVENTARIO
+                 INVENTARIO — ACTIVO
             ================================================== -->
 
-            <article class="module disabled">
+            <article class="module">
 
                 <div class="module-icon">
-                    📊
+                    📦
                 </div>
 
                 <h3>
@@ -1016,12 +1016,15 @@
                 </h3>
 
                 <p>
-                    Consulta existencias, mínimos
-                    y movimientos del inventario.
+                    Controla existencias, stock bajo
+                    y movimientos de inventario.
                 </p>
 
-                <button>
-                    Próximamente
+                <button
+                    type="button"
+                    onclick="abrirInventario()"
+                >
+                    Abrir inventario
                 </button>
 
             </article>
@@ -1031,52 +1034,54 @@
                  PROVEEDORES
             ================================================== -->
 
-            <article class="module disabled">
+            <article class="module">
 
-                <div class="module-icon">
-                    🚚
-                </div>
+               <div class="module-icon">
+              👥
+              </div>
 
-                <h3>
-                    Proveedores
-                </h3>
+              <h3>
+             Proveedores
+             </h3>
 
-                <p>
-                    Administra los proveedores
-                    y sus datos comerciales.
-                </p>
+             <p>
+             Registra, consulta y administra tus proveedores.
+             </p>
 
-                <button>
-                    Próximamente
-                </button>
-
+              <button
+             type="button"
+              onclick="abrirProveedores()"
+              >
+              Abrir proveedores
+              </button>
             </article>
 
 
             <!-- =================================================
                  REPORTES
             ================================================== -->
+         <article class="module">
 
-            <article class="module disabled">
+               <div class="module-icon">
+              📊
+              </div>
 
-                <div class="module-icon">
-                    📈
-                </div>
-
-                <h3>
-                    Reportes
-                </h3>
+               <h3>
+               Reportes
+               </h3>
 
                 <p>
-                    Consulta estadísticas y resultados
-                    del negocio.
-                </p>
+                Analiza ventas, compras, ganancias e inventario.
+                 </p>
 
-                <button>
-                    Próximamente
-                </button>
-
+                <button
+                type="button"
+               onclick="abrirReportes()"
+               >
+              Abrir reportes
+              </button>
             </article>
+            
 
 
         </section>
@@ -1250,12 +1255,43 @@
 
 
         /* =====================================================
+           INVENTARIO
+        ===================================================== */
+
+        function abrirInventario() {
+
+            window.location.href = "/inventario.html";
+
+        }
+
+        /* =========================================================
+          ABRIR PROVEEDORES
+        ========================================================= */
+
+        function abrirProveedores() {
+
+         window.location.href = "/proveedores.html";
+
+        }
+
+        /* =========================================================
+         ABRIR REPORTES
+        ========================================================= */
+
+        function abrirReportes() {
+
+          window.location.href =
+          "/reportes.html";
+
+        }
+
+
+        /* =====================================================
            CONFIGURACIÓN DEL CATÁLOGO
         ===================================================== */
 
         const URL_CATALOGO =
             "https://lunas-octubre.onrender.com/";
-
 
         let qrGenerado = false;
 
@@ -1530,6 +1566,7 @@
             ctx.strokeStyle =
                 "#facc15";
 
+
             ctx.lineWidth = 8;
 
 
@@ -1640,6 +1677,7 @@
             ctx.shadowColor =
                 "rgba(0,0,0,0.45)";
 
+
             ctx.shadowBlur = 30;
 
             ctx.shadowOffsetY = 12;
@@ -1655,6 +1693,7 @@
 
             ctx.shadowColor =
                 "transparent";
+
 
             ctx.shadowBlur = 0;
 

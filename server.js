@@ -3000,6 +3000,1150 @@ app.post(
     }
 );
 
+/* =========================================================
+   RUTAS DE INVENTARIO
+   ========================================================= */
+
+/*
+   GET /api/inventario
+
+   Obtiene el inventario actual desde productos_lunas.
+   Calcula automáticamente el estado del stock.
+*/
+
+app.get(
+    "/api/inventario",
+    async (req, res) => {
+        try {
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        p.id,
+                        p.nombre,
+                        p.codigo,
+                        p.descripcion,
+                        p.categoria_id,
+                        p.proveedor_id,
+                        p.precio_compra,
+                        p.precio_venta,
+                        p.cantidad,
+                        p.stock_minimo,
+                        p.imagen,
+                        p.activo,
+                        p.updated_at,
+
+                        CASE
+                            WHEN p.cantidad <= 0
+                                THEN 'AGOTADO'
+
+                            WHEN p.cantidad <= p.stock_minimo
+                                THEN 'BAJO'
+
+                            ELSE 'DISPONIBLE'
+                        END AS estado_stock
+
+                    FROM productos_lunas p
+
+                    ORDER BY
+                        CASE
+                            WHEN p.cantidad <= 0 THEN 1
+                            WHEN p.cantidad <= p.stock_minimo THEN 2
+                            ELSE 3
+                        END,
+                        p.nombre ASC
+                    `
+                );
+
+            res.json(
+                resultado.rows
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo inventario:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo inventario."
+            });
+        }
+    }
+);
+
+
+/*
+   GET /api/inventario/movimientos
+
+   Obtiene todos los movimientos de inventario:
+   COMPRA = entrada
+   VENTA  = salida
+*/
+
+app.get(
+    "/api/inventario/movimientos",
+    async (req, res) => {
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        mi.id,
+                        mi.producto_id,
+                        mi.tipo,
+                        mi.cantidad,
+                        mi.motivo,
+                        mi.referencia_tipo,
+                        mi.referencia_id,
+                        mi.created_at,
+
+                        p.nombre AS producto_nombre,
+                        p.codigo AS producto_codigo,
+                        p.imagen AS producto_imagen
+
+                    FROM movimientos_inventario mi
+
+                    INNER JOIN productos_lunas p
+                        ON p.id = mi.producto_id
+
+                    ORDER BY
+                        mi.created_at DESC,
+                        mi.id DESC
+                    `
+                );
+
+            res.json(
+                resultado.rows
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo movimientos de inventario:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo movimientos de inventario."
+            });
+        }
+    }
+);
+
+/* =========================================================
+   RUTAS DE PROVEEDORES
+   ========================================================= */
+
+/*
+   GET /api/proveedores
+   Obtener todos los proveedores
+*/
+app.get(
+    "/api/proveedores",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
+
+                    FROM proveedores
+
+                    ORDER BY
+                        activo DESC,
+                        nombre ASC
+                    `
+                );
+
+            res.json(
+                resultado.rows
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo proveedores:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo proveedores."
+            });
+        }
+    }
+);
+
+
+/*
+   GET /api/proveedores/:id
+   Obtener un proveedor específico
+*/
+app.get(
+    "/api/proveedores/:id",
+    async (req, res) => {
+
+        try {
+
+            const {
+                id
+            } = req.params;
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
+
+                    FROM proveedores
+
+                    WHERE id = $1
+
+                    LIMIT 1
+                    `,
+                    [id]
+                );
+
+            if (
+                resultado.rows.length === 0
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Proveedor no encontrado."
+                });
+            }
+
+            res.json(
+                resultado.rows[0]
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo proveedor:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error obteniendo proveedor."
+            });
+        }
+    }
+);
+
+
+/*
+   POST /api/proveedores
+   Crear proveedor
+*/
+app.post(
+    "/api/proveedores",
+    async (req, res) => {
+
+        try {
+
+            const {
+                nombre,
+                empresa,
+                telefono,
+                correo,
+                direccion,
+                observaciones
+            } = req.body;
+
+
+            const nombreLimpio =
+                String(
+                    nombre || ""
+                ).trim();
+
+            const empresaLimpia =
+                String(
+                    empresa || ""
+                ).trim();
+
+            const telefonoLimpio =
+                String(
+                    telefono || ""
+                ).trim();
+
+            const correoLimpio =
+                String(
+                    correo || ""
+                ).trim();
+
+            const direccionLimpia =
+                String(
+                    direccion || ""
+                ).trim();
+
+            const observacionesLimpias =
+                String(
+                    observaciones || ""
+                ).trim();
+
+
+            /*
+               El nombre es obligatorio
+            */
+            if (!nombreLimpio) {
+
+                return res.status(400).json({
+                    error:
+                        "El nombre del proveedor es obligatorio."
+                });
+            }
+
+
+            const resultado =
+                await pool.query(
+                    `
+                    INSERT INTO proveedores
+                    (
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo
+                    )
+
+                    VALUES
+                    (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        TRUE
+                    )
+
+                    RETURNING
+                        id,
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
+                    `,
+                    [
+                        nombreLimpio,
+                        empresaLimpia || null,
+                        telefonoLimpio || null,
+                        correoLimpio || null,
+                        direccionLimpia || null,
+                        observacionesLimpias || null
+                    ]
+                );
+
+
+            res.status(201).json({
+                mensaje:
+                    "Proveedor creado correctamente.",
+                proveedor:
+                    resultado.rows[0]
+            });
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error creando proveedor:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error creando proveedor."
+            });
+        }
+    }
+);
+
+
+/*
+   PUT /api/proveedores/:id
+   Editar proveedor
+*/
+app.put(
+    "/api/proveedores/:id",
+    async (req, res) => {
+
+        try {
+
+            const {
+                id
+            } = req.params;
+
+            const {
+                nombre,
+                empresa,
+                telefono,
+                correo,
+                direccion,
+                observaciones
+            } = req.body;
+
+
+            const nombreLimpio =
+                String(
+                    nombre || ""
+                ).trim();
+
+            const empresaLimpia =
+                String(
+                    empresa || ""
+                ).trim();
+
+            const telefonoLimpio =
+                String(
+                    telefono || ""
+                ).trim();
+
+            const correoLimpio =
+                String(
+                    correo || ""
+                ).trim();
+
+            const direccionLimpia =
+                String(
+                    direccion || ""
+                ).trim();
+
+            const observacionesLimpias =
+                String(
+                    observaciones || ""
+                ).trim();
+
+
+            if (!nombreLimpio) {
+
+                return res.status(400).json({
+                    error:
+                        "El nombre del proveedor es obligatorio."
+                });
+            }
+
+
+            const resultado =
+                await pool.query(
+                    `
+                    UPDATE proveedores
+
+                    SET
+                        nombre = $1,
+                        empresa = $2,
+                        telefono = $3,
+                        correo = $4,
+                        direccion = $5,
+                        observaciones = $6
+
+                    WHERE id = $7
+
+                    RETURNING
+                        id,
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
+                    `,
+                    [
+                        nombreLimpio,
+                        empresaLimpia || null,
+                        telefonoLimpio || null,
+                        correoLimpio || null,
+                        direccionLimpia || null,
+                        observacionesLimpias || null,
+                        id
+                    ]
+                );
+
+
+            if (
+                resultado.rows.length === 0
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Proveedor no encontrado."
+                });
+            }
+
+
+            res.json({
+                mensaje:
+                    "Proveedor actualizado correctamente.",
+                proveedor:
+                    resultado.rows[0]
+            });
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error actualizando proveedor:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error actualizando proveedor."
+            });
+        }
+    }
+);
+
+
+/*
+   PATCH /api/proveedores/:id/activar
+   Activar o desactivar proveedor
+*/
+app.patch(
+    "/api/proveedores/:id/activar",
+    async (req, res) => {
+
+        try {
+
+            const {
+                id
+            } = req.params;
+
+            const {
+                activo
+            } = req.body;
+
+
+            if (
+                typeof activo !== "boolean"
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "El campo activo debe ser true o false."
+                });
+            }
+
+
+            const resultado =
+                await pool.query(
+                    `
+                    UPDATE proveedores
+
+                    SET
+                        activo = $1
+
+                    WHERE id = $2
+
+                    RETURNING
+                        id,
+                        nombre,
+                        empresa,
+                        telefono,
+                        correo,
+                        direccion,
+                        observaciones,
+                        activo,
+                        created_at
+                    `,
+                    [
+                        activo,
+                        id
+                    ]
+                );
+
+
+            if (
+                resultado.rows.length === 0
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Proveedor no encontrado."
+                });
+            }
+
+
+            res.json({
+                mensaje:
+                    activo
+                        ? "Proveedor activado correctamente."
+                        : "Proveedor desactivado correctamente.",
+                proveedor:
+                    resultado.rows[0]
+            });
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error cambiando estado del proveedor:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message ||
+                    "Error cambiando estado del proveedor."
+            });
+        }
+    }
+);
+
+/* =========================================================
+   RUTAS DE REPORTES
+   ========================================================= */
+
+
+/*
+   GET /api/reportes/resumen
+
+   Resumen general del negocio.
+*/
+app.get(
+    "/api/reportes/resumen",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+
+                        /* ==============================
+                           VENTAS
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(total),
+                                    0
+                                )
+                            FROM ventas
+                        ) AS total_ventas,
+
+
+                        (
+                            SELECT
+                                COUNT(*)
+                            FROM ventas
+                        ) AS cantidad_ventas,
+
+
+                        /* ==============================
+                           GANANCIA
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(ganancia),
+                                    0
+                                )
+                            FROM detalle_ventas
+                        ) AS ganancia_total,
+
+
+                        /* ==============================
+                           COMPRAS
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(total),
+                                    0
+                                )
+                            FROM compras
+                        ) AS total_compras,
+
+
+                        (
+                            SELECT
+                                COUNT(*)
+                            FROM compras
+                        ) AS cantidad_compras,
+
+
+                        /* ==============================
+                           PRODUCTOS VENDIDOS
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(cantidad),
+                                    0
+                                )
+                            FROM detalle_ventas
+                        ) AS productos_vendidos,
+
+
+                        /* ==============================
+                           PRODUCTOS COMPRADOS
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(cantidad),
+                                    0
+                                )
+                            FROM detalle_compras
+                        ) AS productos_comprados,
+
+
+                        /* ==============================
+                           INVENTARIO
+                           ============================== */
+
+                        (
+                            SELECT
+                                COUNT(*)
+                            FROM productos_lunas
+                            WHERE activo = TRUE
+                        ) AS productos_activos,
+
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(cantidad),
+                                    0
+                                )
+                            FROM productos_lunas
+                            WHERE activo = TRUE
+                        ) AS unidades_inventario,
+
+
+                        (
+                            SELECT
+                                COUNT(*)
+                            FROM productos_lunas
+                            WHERE
+                                activo = TRUE
+                                AND cantidad <= stock_minimo
+                                AND cantidad > 0
+                        ) AS productos_bajos,
+
+
+                        (
+                            SELECT
+                                COUNT(*)
+                            FROM productos_lunas
+                            WHERE
+                                activo = TRUE
+                                AND cantidad <= 0
+                        ) AS productos_agotados,
+
+
+                        /* ==============================
+                           VALOR DEL INVENTARIO
+                           ============================== */
+
+                        (
+                            SELECT
+                                COALESCE(
+                                    SUM(
+                                        cantidad *
+                                        precio_compra
+                                    ),
+                                    0
+                                )
+                            FROM productos_lunas
+                            WHERE activo = TRUE
+                        ) AS valor_inventario;
+
+
+                    `
+                );
+
+
+            res.json(
+                resultado.rows[0]
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo resumen de reportes:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    error.message ||
+                    "Error obteniendo el resumen."
+
+            });
+
+        }
+
+    }
+);
+
+
+/*
+   GET /api/reportes/ventas
+
+   Reporte detallado de ventas.
+*/
+app.get(
+    "/api/reportes/ventas",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+
+                        v.id,
+                        v.fecha,
+                        v.total,
+                        v.metodo_pago,
+                        v.observaciones,
+
+                        COUNT(
+                            dv.id
+                        ) AS lineas,
+
+                        COALESCE(
+                            SUM(
+                                dv.cantidad
+                            ),
+                            0
+                        ) AS unidades,
+
+                        COALESCE(
+                            SUM(
+                                dv.ganancia
+                            ),
+                            0
+                        ) AS ganancia
+
+
+                    FROM ventas v
+
+                    LEFT JOIN detalle_ventas dv
+                        ON dv.venta_id = v.id
+
+                    GROUP BY
+                        v.id,
+                        v.fecha,
+                        v.total,
+                        v.metodo_pago,
+                        v.observaciones
+
+                    ORDER BY
+                        v.fecha DESC,
+                        v.id DESC
+                    `
+                );
+
+
+            res.json(
+                resultado.rows
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo reporte de ventas:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    error.message ||
+                    "Error obteniendo ventas."
+
+            });
+
+        }
+
+    }
+);
+
+
+/*
+   GET /api/reportes/productos-vendidos
+
+   Productos que más se han vendido.
+*/
+app.get(
+    "/api/reportes/productos-vendidos",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+
+                        p.id,
+                        p.nombre,
+                        p.codigo,
+
+                        COALESCE(
+                            SUM(
+                                dv.cantidad
+                            ),
+                            0
+                        ) AS unidades_vendidas,
+
+                        COALESCE(
+                            SUM(
+                                dv.subtotal
+                            ),
+                            0
+                        ) AS total_vendido,
+
+                        COALESCE(
+                            SUM(
+                                dv.ganancia
+                            ),
+                            0
+                        ) AS ganancia
+
+
+                    FROM detalle_ventas dv
+
+                    INNER JOIN productos_lunas p
+                        ON p.id = dv.producto_id
+
+                    GROUP BY
+                        p.id,
+                        p.nombre,
+                        p.codigo
+
+                    ORDER BY
+                        unidades_vendidas DESC,
+                        total_vendido DESC
+                    `
+                );
+
+
+            res.json(
+                resultado.rows
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo productos vendidos:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    error.message ||
+                    "Error obteniendo productos vendidos."
+
+            });
+
+        }
+
+    }
+);
+
+
+/*
+   GET /api/reportes/compras
+
+   Reporte detallado de compras.
+*/
+app.get(
+    "/api/reportes/compras",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+
+                        c.id,
+                        c.fecha,
+                        c.total,
+                        c.proveedor_id,
+                        c.observaciones,
+
+                        COUNT(
+                            dc.id
+                        ) AS lineas,
+
+                        COALESCE(
+                            SUM(
+                                dc.cantidad
+                            ),
+                            0
+                        ) AS unidades
+
+
+                    FROM compras c
+
+                    LEFT JOIN detalle_compras dc
+                        ON dc.compra_id = c.id
+
+                    GROUP BY
+                        c.id,
+                        c.fecha,
+                        c.total,
+                        c.proveedor_id,
+                        c.observaciones
+
+                    ORDER BY
+                        c.fecha DESC,
+                        c.id DESC
+                    `
+                );
+
+
+            res.json(
+                resultado.rows
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo reporte de compras:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    error.message ||
+                    "Error obteniendo compras."
+
+            });
+
+        }
+
+    }
+);
+
+
+/*
+   GET /api/reportes/movimientos
+
+   Movimientos de inventario.
+*/
+app.get(
+    "/api/reportes/movimientos",
+    async (req, res) => {
+
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+
+                        mi.id,
+                        mi.producto_id,
+                        mi.tipo,
+                        mi.cantidad,
+                        mi.motivo,
+                        mi.referencia_tipo,
+                        mi.referencia_id,
+                        mi.fecha,
+
+                        p.nombre AS producto_nombre,
+                        p.codigo AS producto_codigo
+
+
+                    FROM movimientos_inventario mi
+
+                    INNER JOIN productos_lunas p
+                        ON p.id = mi.producto_id
+
+                    ORDER BY
+                        mi.fecha DESC,
+                        mi.id DESC
+                    `
+                );
+
+
+            res.json(
+                resultado.rows
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error obteniendo movimientos:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    error.message ||
+                    "Error obteniendo movimientos."
+
+            });
+
+        }
+
+    }
+);
 
 /* =========================================================
    RUTAS HTML

@@ -1,0 +1,1261 @@
+/* =========================================================
+   LUNAS DE OCTUBRE — REPORTES
+   ========================================================= */
+
+:root {
+
+    --bg:
+        #0f172a;
+
+    --panel:
+        #172033;
+
+    --panel-2:
+        #1e293b;
+
+    --border:
+        rgba(148, 163, 184, 0.14);
+
+    --text:
+        #f8fafc;
+
+    --muted:
+        #94a3b8;
+
+    --primary:
+        #38bdf8;
+
+    --primary-dark:
+        #0284c7;
+
+    --success:
+        #22c55e;
+
+    --warning:
+        #f59e0b;
+
+    --danger:
+        #ef4444;
+
+    --purple:
+        #a78bfa;
+
+    --shadow:
+        0 20px 45px rgba(0, 0, 0, 0.22);
+
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+
+    margin: 0;
+
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(56, 189, 248, 0.08),
+            transparent 35%
+        ),
+        var(--bg);
+
+    color:
+        var(--text);
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+
+/* =========================================================
+   ELEMENTOS OCULTOS
+   ========================================================= */
+
+[hidden] {
+    display: none !important;
+}
+
+
+/* =========================================================
+   TOPBAR
+   ========================================================= */
+
+.topbar {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 20;
+
+    min-height: 76px;
+
+    padding:
+        14px 28px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    background:
+        rgba(15, 23, 42, 0.94);
+
+    border-bottom:
+        1px solid var(--border);
+
+    backdrop-filter:
+        blur(18px);
+}
+
+
+.topbar-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.topbar h1 {
+
+    margin: 0;
+
+    font-size: 22px;
+
+    font-weight: 800;
+}
+
+
+.topbar p {
+
+    margin: 4px 0 0;
+
+    color:
+        var(--muted);
+
+    font-size: 13px;
+}
+
+
+.btn-volver {
+
+    width: 42px;
+
+    height: 42px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 12px;
+
+    background:
+        rgba(255, 255, 255, 0.04);
+
+    color:
+        var(--text);
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+    transition:
+        0.2s ease;
+}
+
+
+.btn-volver:hover {
+
+    background:
+        rgba(56, 189, 248, 0.12);
+
+    border-color:
+        rgba(56, 189, 248, 0.35);
+
+    transform:
+        translateX(-2px);
+}
+
+
+.fecha-actual {
+
+    color:
+        var(--muted);
+
+    font-size: 13px;
+
+    text-transform: capitalize;
+}
+
+
+/* =========================================================
+   CONTENEDOR
+   ========================================================= */
+
+.contenedor {
+
+    width:
+        min(1400px, calc(100% - 40px));
+
+    margin:
+        0 auto;
+
+    padding:
+        34px 0 60px;
+}
+
+
+/* =========================================================
+   TITULO
+   ========================================================= */
+
+.titulo-seccion {
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 26px;
+}
+
+
+.etiqueta,
+.panel-etiqueta {
+
+    display: inline-block;
+
+    margin-bottom: 7px;
+
+    color:
+        var(--primary);
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing:
+        1.4px;
+}
+
+
+.titulo-seccion h2 {
+
+    margin: 0;
+
+    font-size: 28px;
+
+    line-height: 1.15;
+}
+
+
+.titulo-seccion p {
+
+    margin:
+        8px 0 0;
+
+    color:
+        var(--muted);
+
+    font-size: 14px;
+}
+
+
+.btn-recargar {
+
+    padding:
+        11px 16px;
+
+    border:
+        1px solid rgba(56, 189, 248, 0.28);
+
+    border-radius: 11px;
+
+    background:
+        rgba(56, 189, 248, 0.08);
+
+    color:
+        #bae6fd;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        0.2s ease;
+}
+
+
+.btn-recargar:hover {
+
+    background:
+        rgba(56, 189, 248, 0.16);
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* =========================================================
+   RESUMEN
+   ========================================================= */
+
+.resumen-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+
+.resumen-card {
+
+    min-height: 150px;
+
+    padding: 22px;
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 16px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 41, 59, 0.95),
+            rgba(23, 32, 51, 0.95)
+        );
+
+    box-shadow:
+        var(--shadow);
+
+    transition:
+        0.2s ease;
+}
+
+
+.resumen-card:hover {
+
+    transform:
+        translateY(-3px);
+
+    border-color:
+        rgba(56, 189, 248, 0.24);
+}
+
+
+.card-icon {
+
+    width: 46px;
+
+    height: 46px;
+
+    flex: 0 0 46px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background:
+        rgba(56, 189, 248, 0.10);
+
+    color:
+        var(--primary);
+
+    font-size: 21px;
+
+    font-weight: 800;
+}
+
+
+.resumen-card.ganancia
+.card-icon {
+
+    background:
+        rgba(34, 197, 94, 0.10);
+
+    color:
+        var(--success);
+}
+
+
+.resumen-card.compras
+.card-icon {
+
+    background:
+        rgba(167, 139, 250, 0.10);
+
+    color:
+        var(--purple);
+}
+
+
+.resumen-card.inventario
+.card-icon {
+
+    background:
+        rgba(245, 158, 11, 0.10);
+
+    color:
+        var(--warning);
+}
+
+
+.card-contenido {
+
+    min-width: 0;
+}
+
+
+.card-contenido span {
+
+    display: block;
+
+    color:
+        var(--muted);
+
+    font-size: 13px;
+
+    margin-bottom: 8px;
+}
+
+
+.card-contenido strong {
+
+    display: block;
+
+    font-size: 24px;
+
+    line-height: 1.2;
+
+    overflow-wrap:
+        anywhere;
+}
+
+
+.card-contenido small {
+
+    display: block;
+
+    margin-top: 8px;
+
+    color:
+        #64748b;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   INDICADORES
+   ========================================================= */
+
+.indicadores-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 22px;
+}
+
+
+.indicador {
+
+    min-height: 86px;
+
+    padding:
+        15px 16px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    background:
+        rgba(23, 32, 51, 0.78);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 14px;
+}
+
+
+.indicador-icon {
+
+    width: 36px;
+
+    height: 36px;
+
+    flex: 0 0 36px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background:
+        rgba(56, 189, 248, 0.10);
+
+    color:
+        var(--primary);
+
+    font-weight: 800;
+}
+
+
+.indicador.alerta
+.indicador-icon {
+
+    background:
+        rgba(245, 158, 11, 0.10);
+
+    color:
+        var(--warning);
+}
+
+
+.indicador.agotado
+.indicador-icon {
+
+    background:
+        rgba(239, 68, 68, 0.10);
+
+    color:
+        var(--danger);
+}
+
+
+.indicador span {
+
+    display: block;
+
+    color:
+        var(--muted);
+
+    font-size: 12px;
+
+    margin-bottom: 5px;
+}
+
+
+.indicador strong {
+
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   PANELES
+   ========================================================= */
+
+.panel {
+
+    overflow: hidden;
+
+    margin-bottom: 22px;
+
+    background:
+        rgba(23, 32, 51, 0.90);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 18px;
+
+    box-shadow:
+        var(--shadow);
+}
+
+
+.panel-header {
+
+    padding:
+        22px 22px 17px;
+
+    border-bottom:
+        1px solid var(--border);
+}
+
+
+.panel-header h2 {
+
+    margin: 0;
+
+    font-size: 18px;
+}
+
+
+.panel-header p {
+
+    margin:
+        6px 0 0;
+
+    color:
+        var(--muted);
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+
+.tabla-contenedor {
+
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+
+table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+    min-width: 760px;
+}
+
+
+th {
+
+    padding:
+        14px 18px;
+
+    color:
+        #64748b;
+
+    background:
+        rgba(15, 23, 42, 0.32);
+
+    font-size: 11px;
+
+    text-align: left;
+
+    text-transform: uppercase;
+
+    letter-spacing:
+        0.7px;
+
+    white-space:
+        nowrap;
+}
+
+
+td {
+
+    padding:
+        15px 18px;
+
+    border-top:
+        1px solid rgba(148, 163, 184, 0.08);
+
+    color:
+        #dbeafe;
+
+    font-size: 13px;
+
+    vertical-align:
+        middle;
+}
+
+
+tbody tr {
+
+    transition:
+        background 0.2s ease;
+}
+
+
+tbody tr:hover {
+
+    background:
+        rgba(56, 189, 248, 0.035);
+}
+
+
+.venta-id {
+
+    color:
+        var(--primary);
+
+    font-weight: 800;
+}
+
+
+.fecha-texto {
+
+    color:
+        var(--muted);
+}
+
+
+.metodo {
+
+    display: inline-flex;
+
+    padding:
+        5px 9px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(56, 189, 248, 0.08);
+
+    color:
+        #bae6fd;
+
+    font-size: 11px;
+
+    font-weight: 700;
+}
+
+
+.total-text {
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+}
+
+
+.ganancia-text {
+
+    color:
+        #86efac;
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+}
+
+
+.movimiento-entrada {
+
+    color:
+        var(--success);
+
+    font-weight: 800;
+}
+
+
+.movimiento-salida {
+
+    color:
+        var(--danger);
+
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   DOS COLUMNAS
+   ========================================================= */
+
+.dos-columnas {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 22px;
+}
+
+
+.dos-columnas .panel {
+
+    min-width: 0;
+}
+
+
+/* =========================================================
+   PRODUCTOS VENDIDOS
+   ========================================================= */
+
+.lista-productos,
+.lista-compras {
+
+    padding:
+        8px 0;
+}
+
+
+.producto-reporte {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    padding:
+        13px 18px;
+
+    border-bottom:
+        1px solid rgba(148, 163, 184, 0.07);
+}
+
+
+.producto-reporte:last-child {
+
+    border-bottom:
+        none;
+}
+
+
+.producto-ranking {
+
+    width: 30px;
+
+    height: 30px;
+
+    flex: 0 0 30px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background:
+        rgba(56, 189, 248, 0.08);
+
+    color:
+        var(--primary);
+
+    font-weight: 800;
+
+    font-size: 12px;
+}
+
+
+.producto-info {
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+.producto-info strong {
+
+    display: block;
+
+    overflow: hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+
+    font-size: 13px;
+}
+
+
+.producto-info span {
+
+    display: block;
+
+    margin-top: 4px;
+
+    color:
+        var(--muted);
+
+    font-size: 11px;
+}
+
+
+.producto-metricas {
+
+    text-align: right;
+}
+
+
+.producto-metricas strong {
+
+    display: block;
+
+    font-size: 13px;
+}
+
+
+.producto-metricas span {
+
+    display: block;
+
+    margin-top: 4px;
+
+    color:
+        #86efac;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   COMPRAS
+   ========================================================= */
+
+.compra-reporte {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding:
+        14px 18px;
+
+    border-bottom:
+        1px solid rgba(148, 163, 184, 0.07);
+}
+
+
+.compra-reporte:last-child {
+
+    border-bottom:
+        none;
+}
+
+
+.compra-info strong {
+
+    display: block;
+
+    font-size: 13px;
+}
+
+
+.compra-info span {
+
+    display: block;
+
+    margin-top: 5px;
+
+    color:
+        var(--muted);
+
+    font-size: 11px;
+}
+
+
+.compra-total {
+
+    color:
+        #c4b5fd;
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+}
+
+
+/* =========================================================
+   ESTADO VACÍO
+   ========================================================= */
+
+.estado-vacio {
+
+    padding:
+        30px 20px;
+
+    text-align:
+        center;
+
+    color:
+        var(--muted);
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   NOTIFICACIÓN
+   ========================================================= */
+
+.notificacion {
+
+    position: fixed;
+
+    right: 22px;
+
+    bottom: 22px;
+
+    z-index: 100;
+
+    max-width: 360px;
+
+    padding:
+        13px 16px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    background:
+        #172033;
+
+    border:
+        1px solid rgba(34, 197, 94, 0.25);
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35);
+
+    transform:
+        translateY(25px);
+
+    opacity: 0;
+
+    pointer-events:
+        none;
+
+    transition:
+        0.25s ease;
+}
+
+
+.notificacion.mostrar {
+
+    transform:
+        translateY(0);
+
+    opacity: 1;
+}
+
+
+#notificacionIcono {
+
+    width: 27px;
+
+    height: 27px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background:
+        rgba(34, 197, 94, 0.12);
+
+    color:
+        var(--success);
+
+    font-weight: 800;
+}
+
+
+#notificacionTexto {
+
+    color:
+        #e2e8f0;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1150px) {
+
+    .resumen-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+
+    .indicadores-grid {
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+    }
+
+}
+
+
+@media (max-width: 800px) {
+
+    .contenedor {
+
+        width:
+            min(
+                100% - 24px,
+                700px
+            );
+
+        padding-top:
+            24px;
+
+    }
+
+
+    .topbar {
+
+        padding:
+            13px 14px;
+
+    }
+
+
+    .fecha-actual {
+
+        display: none;
+
+    }
+
+
+    .titulo-seccion {
+
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+
+    }
+
+
+    .dos-columnas {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .resumen-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+
+    .indicadores-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+
+    .titulo-seccion h2 {
+
+        font-size:
+            24px;
+
+    }
+
+
+    .resumen-card {
+
+        min-height:
+            125px;
+
+    }
+
+}
+
+
+@media (max-width: 420px) {
+
+    .indicadores-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+
+    .btn-recargar {
+
+        width: 100%;
+
+    }
+
+
+    .notificacion {
+
+        right: 12px;
+
+        left: 12px;
+
+        bottom: 12px;
+
+        max-width: none;
+
+    }
+
+}

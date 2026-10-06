@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0f172a"
+    >
+
+    <title>
+        Reportes | Lunas de Octubre
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/reportes.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <header class="topbar">
+
+        <div class="topbar-left">
+
+            <button
+                type="button"
+                class="btn-volver"
+                onclick="volverAdmin()"
+            >
+                ←
+            </button>
+
+            <div>
+
+                <h1>
+                    Reportes
+                </h1>
+
+                <p>
+                    Analiza las ventas, compras e inventario
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="fecha-actual"
+            id="fechaActual"
+        >
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO
+         ===================================================== -->
+
+    <main class="contenedor">
+
+
+        <!-- =================================================
+             TITULO
+             ================================================= -->
+
+        <section class="titulo-seccion">
+
+            <div>
+
+                <span class="etiqueta">
+                    PANEL COMERCIAL
+                </span>
+
+                <h2>
+                    Resumen del negocio
+                </h2>
+
+                <p>
+                    Consulta el comportamiento general de
+                    Lunas de Octubre.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="btn-recargar"
+                onclick="cargarTodosLosReportes()"
+            >
+                ↻ Actualizar
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             RESUMEN PRINCIPAL
+             ================================================= -->
+
+        <section class="resumen-grid">
+
+
+            <!-- VENTAS -->
+
+            <article class="resumen-card ventas">
+
+                <div class="card-icon">
+                    $
+                </div>
+
+                <div class="card-contenido">
+
+                    <span>
+                        Ventas totales
+                    </span>
+
+                    <strong id="totalVentas">
+                        $0
+                    </strong>
+
+                    <small id="cantidadVentas">
+                        0 ventas
+                    </small>
+
+                </div>
+
+            </article>
+
+
+            <!-- GANANCIA -->
+
+            <article class="resumen-card ganancia">
+
+                <div class="card-icon">
+                    +
+                </div>
+
+                <div class="card-contenido">
+
+                    <span>
+                        Ganancia total
+                    </span>
+
+                    <strong id="gananciaTotal">
+                        $0
+                    </strong>
+
+                    <small>
+                        Ganancia generada
+                    </small>
+
+                </div>
+
+            </article>
+
+
+            <!-- COMPRAS -->
+
+            <article class="resumen-card compras">
+
+                <div class="card-icon">
+                    ↓
+                </div>
+
+                <div class="card-contenido">
+
+                    <span>
+                        Compras totales
+                    </span>
+
+                    <strong id="totalCompras">
+                        $0
+                    </strong>
+
+                    <small id="cantidadCompras">
+                        0 compras
+                    </small>
+
+                </div>
+
+            </article>
+
+
+            <!-- INVENTARIO -->
+
+            <article class="resumen-card inventario">
+
+                <div class="card-icon">
+                    #
+                </div>
+
+                <div class="card-contenido">
+
+                    <span>
+                        Valor del inventario
+                    </span>
+
+                    <strong id="valorInventario">
+                        $0
+                    </strong>
+
+                    <small>
+                        Valor a precio de compra
+                    </small>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- =================================================
+             INDICADORES
+             ================================================= -->
+
+        <section class="indicadores-grid">
+
+
+            <article class="indicador">
+
+                <div class="indicador-icon">
+                    #
+                </div>
+
+                <div>
+
+                    <span>
+                        Productos vendidos
+                    </span>
+
+                    <strong id="productosVendidos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="indicador">
+
+                <div class="indicador-icon">
+                    +
+                </div>
+
+                <div>
+
+                    <span>
+                        Productos comprados
+                    </span>
+
+                    <strong id="productosComprados">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="indicador">
+
+                <div class="indicador-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <span>
+                        Productos activos
+                    </span>
+
+                    <strong id="productosActivos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="indicador alerta">
+
+                <div class="indicador-icon">
+                    !
+                </div>
+
+                <div>
+
+                    <span>
+                        Stock bajo
+                    </span>
+
+                    <strong id="productosBajos">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+
+            <article class="indicador agotado">
+
+                <div class="indicador-icon">
+                    ×
+                </div>
+
+                <div>
+
+                    <span>
+                        Agotados
+                    </span>
+
+                    <strong id="productosAgotados">
+                        0
+                    </strong>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- =================================================
+             VENTAS
+             ================================================= -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-etiqueta">
+                        COMERCIAL
+                    </span>
+
+                    <h2>
+                        Reporte de ventas
+                    </h2>
+
+                    <p>
+                        Historial y comportamiento de tus ventas.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="tabla-contenedor">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Venta
+                            </th>
+
+                            <th>
+                                Fecha
+                            </th>
+
+                            <th>
+                                Método
+                            </th>
+
+                            <th>
+                                Unidades
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+
+                            <th>
+                                Ganancia
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaVentas">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div
+                class="estado-vacio"
+                id="ventasVacias"
+                hidden
+            >
+                No hay ventas registradas.
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             DOS COLUMNAS
+             ================================================= -->
+
+        <section class="dos-columnas">
+
+
+            <!-- PRODUCTOS MÁS VENDIDOS -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <span class="panel-etiqueta">
+                            PRODUCTOS
+                        </span>
+
+                        <h2>
+                            Más vendidos
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="lista-productos"
+                    id="listaProductosVendidos"
+                >
+                </div>
+
+
+                <div
+                    class="estado-vacio"
+                    id="productosVendidosVacios"
+                    hidden
+                >
+                    No hay productos vendidos.
+                </div>
+
+            </section>
+
+
+            <!-- COMPRAS -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <span class="panel-etiqueta">
+                            ABASTECIMIENTO
+                        </span>
+
+                        <h2>
+                            Últimas compras
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="lista-compras"
+                    id="listaCompras"
+                >
+                </div>
+
+
+                <div
+                    class="estado-vacio"
+                    id="comprasVacias"
+                    hidden
+                >
+                    No hay compras registradas.
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =================================================
+             MOVIMIENTOS
+             ================================================= -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="panel-etiqueta">
+                        INVENTARIO
+                    </span>
+
+                    <h2>
+                        Últimos movimientos
+                    </h2>
+
+                    <p>
+                        Entradas y salidas registradas.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="tabla-contenedor">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Fecha
+                            </th>
+
+                            <th>
+                                Producto
+                            </th>
+
+                            <th>
+                                Tipo
+                            </th>
+
+                            <th>
+                                Cantidad
+                            </th>
+
+                            <th>
+                                Motivo
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="tablaMovimientos">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div
+                class="estado-vacio"
+                id="movimientosVacios"
+                hidden
+            >
+                No hay movimientos registrados.
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         NOTIFICACIÓN
+         ===================================================== -->
+
+    <div
+        class="notificacion"
+        id="notificacion"
+    >
+
+        <span id="notificacionIcono">
+            ✓
+        </span>
+
+        <span id="notificacionTexto">
+            Reportes actualizados.
+        </span>
+
+    </div>
+
+
+    <script src="/reportes.js"></script>
+
+</body>
+
+</html>
