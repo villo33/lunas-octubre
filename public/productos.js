@@ -17,43 +17,88 @@ let imagenSeleccionada = null;
    INICIO
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function verificarSesion() {
 
-    verificarSesion();
+    try {
 
-    configurarEventos();
+        const respuesta =
+            await fetch(
+                "/api/auth/me",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store"
+                }
+            );
 
-    await cargarDatosIniciales();
+        if (!respuesta.ok) {
 
-});
+            window.location.replace(
+                "/login.html"
+            );
 
+            return false;
 
-/* =========================================================
-   SESIÓN
-   ========================================================= */
+        }
 
-function verificarSesion() {
+        const datos =
+            await respuesta.json();
 
-    const login = localStorage.getItem("lunasAdmin");
+        if (
+            !datos ||
+            !datos.autenticado
+        ) {
 
-    if (login !== "ok") {
+            window.location.replace(
+                "/login.html"
+            );
 
-        window.location.href = "/login.html";
+            return false;
+
+        }
+
+        console.log(
+            "✅ Productos: sesión válida."
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Productos: error verificando sesión:",
+            error
+        );
+
+        window.location.replace(
+            "/login.html"
+        );
+
+        return false;
 
     }
 
 }
 
 
+/* =========================================================
+   SESIÓN
+   ========================================================= */
+
 function cerrarSesion() {
 
-    localStorage.removeItem("login");
-    localStorage.removeItem("lunasAdmin");
+    localStorage.removeItem(
+        "login"
+    );
 
-    window.location.href = "/login.html";
+    localStorage.removeItem(
+        "lunasAdmin"
+    );
+
+    window.location.href =
+        "/login.html";
 
 }
-
 
 /* =========================================================
    EVENTOS
@@ -62,7 +107,9 @@ function cerrarSesion() {
 function configurarEventos() {
 
     const logoutBtn =
-        document.getElementById("logoutBtn");
+        document.getElementById(
+            "logoutBtn"
+        );
 
     if (logoutBtn) {
 
@@ -75,7 +122,9 @@ function configurarEventos() {
 
 
     const nuevoProductoBtn =
-        document.getElementById("nuevoProductoBtn");
+        document.getElementById(
+            "nuevoProductoBtn"
+        );
 
     if (nuevoProductoBtn) {
 
@@ -87,17 +136,9 @@ function configurarEventos() {
     }
 
 
-    /*
+    /* =====================================================
        BOTÓN DEL ENCABEZADO DE LA TABLA
-
-       Funciona con el ID nuevo recomendado:
-       nuevoProductoTablaBtn
-
-       Y también con el ID antiguo:
-       nuevoProductoVacioBtn
-
-       Esto evita problemas mientras corregimos el HTML.
-    */
+       ===================================================== */
 
     const nuevoProductoTablaBtn =
         document.getElementById(
@@ -114,9 +155,9 @@ function configurarEventos() {
     }
 
 
-    /*
+    /* =====================================================
        BOTÓN DEL ESTADO VACÍO
-    */
+       ===================================================== */
 
     const nuevoProductoVacioBtn =
         document.getElementById(
@@ -134,7 +175,9 @@ function configurarEventos() {
 
 
     const cerrarModalBtn =
-        document.getElementById("cerrarModalBtn");
+        document.getElementById(
+            "cerrarModalBtn"
+        );
 
     if (cerrarModalBtn) {
 
@@ -147,7 +190,9 @@ function configurarEventos() {
 
 
     const cancelarBtn =
-        document.getElementById("cancelarBtn");
+        document.getElementById(
+            "cancelarBtn"
+        );
 
     if (cancelarBtn) {
 
@@ -160,7 +205,9 @@ function configurarEventos() {
 
 
     const productoForm =
-        document.getElementById("productoForm");
+        document.getElementById(
+            "productoForm"
+        );
 
     if (productoForm) {
 
@@ -173,7 +220,9 @@ function configurarEventos() {
 
 
     const buscarProducto =
-        document.getElementById("buscarProducto");
+        document.getElementById(
+            "buscarProducto"
+        );
 
     if (buscarProducto) {
 
@@ -186,7 +235,9 @@ function configurarEventos() {
 
 
     const filtroCategoria =
-        document.getElementById("filtroCategoria");
+        document.getElementById(
+            "filtroCategoria"
+        );
 
     if (filtroCategoria) {
 
@@ -199,7 +250,9 @@ function configurarEventos() {
 
 
     const filtroEstado =
-        document.getElementById("filtroEstado");
+        document.getElementById(
+            "filtroEstado"
+        );
 
     if (filtroEstado) {
 
@@ -212,7 +265,9 @@ function configurarEventos() {
 
 
     const recargarBtn =
-        document.getElementById("recargarBtn");
+        document.getElementById(
+            "recargarBtn"
+        );
 
     if (recargarBtn) {
 
@@ -225,7 +280,9 @@ function configurarEventos() {
 
 
     const imagen =
-        document.getElementById("imagen");
+        document.getElementById(
+            "imagen"
+        );
 
     if (imagen) {
 
@@ -238,7 +295,9 @@ function configurarEventos() {
 
 
     const removeImageBtn =
-        document.getElementById("removeImageBtn");
+        document.getElementById(
+            "removeImageBtn"
+        );
 
     if (removeImageBtn) {
 
@@ -251,10 +310,14 @@ function configurarEventos() {
 
 
     const precioCompra =
-        document.getElementById("precioCompra");
+        document.getElementById(
+            "precioCompra"
+        );
 
     const precioVenta =
-        document.getElementById("precioVenta");
+        document.getElementById(
+            "precioVenta"
+        );
 
 
     if (precioCompra) {
@@ -359,7 +422,6 @@ function configurarEventos() {
     }
 
 }
-
 
 /* =========================================================
    CARGA INICIAL
@@ -573,28 +635,95 @@ function llenarProveedores() {
 
 async function cargarProductos() {
 
-    const respuesta =
-        await fetch(
-            `${API}/productos`
+    console.log("");
+    console.log("========================================");
+    console.log("📦 DIAGNÓSTICO — CARGAR PRODUCTOS");
+    console.log("========================================");
+
+    console.log(
+        "🌐 URL:",
+        `${API}/productos`
+    );
+
+    try {
+
+        const respuesta =
+            await fetch(
+                `${API}/productos`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store"
+                }
+            );
+
+        console.log(
+            "📡 Status:",
+            respuesta.status
         );
 
-
-    if (!respuesta.ok) {
-
-        throw new Error(
-            "No se pudieron cargar los productos."
+        console.log(
+            "📡 OK:",
+            respuesta.ok
         );
+
+        if (!respuesta.ok) {
+
+            const texto =
+                await respuesta.text();
+
+            console.error(
+                "❌ Respuesta del servidor:",
+                texto
+            );
+
+            throw new Error(
+                "No se pudieron cargar los productos."
+            );
+
+        }
+
+        productos =
+            await respuesta.json();
+
+        console.log(
+            "📦 Productos recibidos:",
+            productos
+        );
+
+        console.log(
+            "🔢 Cantidad de productos:",
+            Array.isArray(productos)
+                ? productos.length
+                : "NO ES UN ARRAY"
+        );
+
+        aplicarFiltros();
+
+        actualizarEstadisticas();
+
+        console.log(
+            "✅ Productos procesados correctamente."
+        );
+
+        console.log(
+            "========================================"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ ERROR CARGANDO PRODUCTOS:",
+            error
+        );
+
+        console.log(
+            "========================================"
+        );
+
+        throw error;
 
     }
-
-
-    productos =
-        await respuesta.json();
-
-
-    aplicarFiltros();
-
-    actualizarEstadisticas();
 
 }
 
@@ -2973,3 +3102,52 @@ function escapeHTML(
         );
 
 }
+
+console.log("");
+console.log("========================================");
+console.log("🟢 PRODUCTOS.JS FUE CARGADO");
+console.log("========================================");
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        console.log("");
+        console.log("🟡 DOMCONTENTLOADED DE PRODUCTOS");
+        console.log("========================================");
+
+        const autenticado =
+            await verificarSesion();
+
+        console.log(
+            "🔐 Resultado autenticación:",
+            autenticado
+        );
+
+        if (!autenticado) {
+
+            console.log(
+                "🚫 No se ejecutará cargarDatosIniciales()."
+            );
+
+            return;
+        }
+
+        console.log(
+            "✅ Sesión válida."
+        );
+
+        configurarEventos();
+
+        console.log(
+            "✅ Eventos configurados."
+        );
+
+        await cargarDatosIniciales();
+
+        console.log(
+            "✅ cargarDatosIniciales() terminó."
+        );
+
+    }
+);

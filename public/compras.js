@@ -21,32 +21,132 @@ let compraGuardando = false;
    INICIO
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    verificarSesion();
+        console.log("");
+        console.log(
+            "========================================"
+        );
+        console.log(
+            "🟢 COMPRAS.JS FUE CARGADO"
+        );
+        console.log(
+            "========================================"
+        );
 
-    establecerFechaActual();
+        const autenticado =
+            await verificarSesion();
 
-    await cargarDatosIniciales();
+        console.log(
+            "🔐 Resultado autenticación:",
+            autenticado
+        );
 
-    agregarProducto();
+        if (!autenticado) {
 
-    await cargarCompras();
+            console.log(
+                "🚫 Compras: no se cargarán los datos."
+            );
 
-    actualizarResumen();
+            return;
+        }
 
-});
+        console.log(
+            "✅ Compras: sesión confirmada."
+        );
+
+        establecerFechaActual();
+
+        await cargarDatosIniciales();
+
+        agregarProducto();
+
+        await cargarCompras();
+
+        actualizarResumen();
+
+        console.log(
+            "✅ Compras: inicialización completada."
+        );
+
+    }
+);
 
 
 /* =========================================================
    SESIÓN
    ========================================================= */
 
-function verificarSesion() {
+/* =========================================================
+   SESIÓN SEGURA
+   ========================================================= */
 
-    if (!localStorage.getItem("login")) {
-        window.location.href = "/login.html";
-        return;
+async function verificarSesion() {
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/auth/me",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store"
+                }
+            );
+
+        if (!respuesta.ok) {
+
+            console.log(
+                "🚫 Compras: sesión no válida."
+            );
+
+            window.location.replace(
+                "/login.html"
+            );
+
+            return false;
+        }
+
+        const datos =
+            await respuesta.json();
+
+        if (
+            !datos ||
+            !datos.autenticado
+        ) {
+
+            console.log(
+                "🚫 Compras: autenticación rechazada."
+            );
+
+            window.location.replace(
+                "/login.html"
+            );
+
+            return false;
+        }
+
+        console.log(
+            "✅ Compras: sesión válida."
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Compras: error verificando sesión:",
+            error
+        );
+
+        window.location.replace(
+            "/login.html"
+        );
+
+        return false;
     }
 
 }

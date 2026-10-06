@@ -26,46 +26,34 @@
         }
 
         body {
-
             min-height: 100vh;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             padding: 20px;
-
             font-family:
                 "Segoe UI",
                 Arial,
                 sans-serif;
-
             color: #ffffff;
-
             overflow: hidden;
 
             background:
-
                 radial-gradient(
                     circle at 15% 20%,
                     rgba(56, 189, 248, 0.22),
                     transparent 28%
                 ),
-
                 radial-gradient(
                     circle at 85% 80%,
                     rgba(99, 102, 241, 0.25),
                     transparent 30%
                 ),
-
                 radial-gradient(
                     circle at 50% 100%,
                     rgba(168, 85, 247, 0.18),
                     transparent 35%
                 ),
-
                 linear-gradient(
                     135deg,
                     #020617,
@@ -76,36 +64,24 @@
         }
 
         .background {
-
             position: fixed;
-
             inset: 0;
-
             pointer-events: none;
         }
 
         .orb {
-
             position: absolute;
-
             border-radius: 50%;
-
             filter: blur(2px);
-
             opacity: 0.35;
-
             animation:
                 floatOrb 8s ease-in-out infinite;
         }
 
         .orb-one {
-
             width: 180px;
-
             height: 180px;
-
             top: -60px;
-
             left: -50px;
 
             background:
@@ -117,13 +93,9 @@
         }
 
         .orb-two {
-
             width: 220px;
-
             height: 220px;
-
             right: -80px;
-
             bottom: -70px;
 
             background:
@@ -140,14 +112,12 @@
 
             0%,
             100% {
-
                 transform:
                     translateY(0)
                     scale(1);
             }
 
             50% {
-
                 transform:
                     translateY(-18px)
                     scale(1.05);
@@ -155,22 +125,15 @@
         }
 
         .login-wrapper {
-
             position: relative;
-
             z-index: 5;
-
             width: 100%;
-
             max-width: 430px;
         }
 
         .login-box {
-
             position: relative;
-
             padding: 42px 36px 36px;
-
             border-radius: 28px;
 
             border:
@@ -185,14 +148,11 @@
                 );
 
             backdrop-filter: blur(22px);
-
             -webkit-backdrop-filter: blur(22px);
 
             box-shadow:
-
                 0 30px 80px
                 rgba(0, 0, 0, 0.45),
-
                 inset 0 1px 0
                 rgba(255, 255, 255, 0.08);
 
@@ -200,17 +160,11 @@
         }
 
         .login-box::before {
-
             content: "";
-
             position: absolute;
-
             top: 0;
-
             left: 0;
-
             right: 0;
-
             height: 3px;
 
             background:
@@ -223,22 +177,16 @@
         }
 
         .brand {
-
             text-align: center;
-
             margin-bottom: 30px;
         }
 
         .brand-icon {
-
             width: 78px;
-
             height: 78px;
 
             display: flex;
-
             align-items: center;
-
             justify-content: center;
 
             margin: 0 auto 17px;
@@ -261,85 +209,61 @@
         }
 
         .brand h1 {
-
             font-size: 25px;
-
             font-weight: 750;
         }
 
         .brand p {
-
             margin-top: 7px;
-
             color: #94a3b8;
-
             font-size: 13px;
         }
 
         .login-title {
-
             margin-bottom: 22px;
         }
 
         .login-title h2 {
-
             margin-bottom: 5px;
-
             font-size: 21px;
         }
 
         .login-title span {
-
             color: #64748b;
-
             font-size: 13px;
         }
 
         .field {
-
             margin-bottom: 17px;
         }
 
         .field label {
-
             display: block;
-
             margin-bottom: 7px;
-
             color: #cbd5e1;
-
             font-size: 13px;
-
             font-weight: 600;
         }
 
         .input-wrapper {
-
             position: relative;
         }
 
         .input-icon {
-
             position: absolute;
-
             top: 50%;
-
             left: 14px;
 
             transform:
                 translateY(-50%);
 
             color: #64748b;
-
             font-size: 16px;
-
             pointer-events: none;
         }
 
         input {
-
             width: 100%;
-
             height: 50px;
 
             padding:
@@ -350,7 +274,6 @@
                 rgba(255, 255, 255, 0.10);
 
             border-radius: 13px;
-
             outline: none;
 
             color: #ffffff;
@@ -359,7 +282,6 @@
                 rgba(2, 6, 23, 0.42);
 
             font-family: inherit;
-
             font-size: 14px;
 
             transition:
@@ -369,12 +291,10 @@
         }
 
         input::placeholder {
-
             color: #64748b;
         }
 
         input:focus {
-
             border-color: #38bdf8;
 
             background:
@@ -386,46 +306,36 @@
         }
 
         .password-toggle {
-
             position: absolute;
-
             top: 50%;
-
             right: 13px;
 
             transform:
                 translateY(-50%);
 
             width: auto;
-
             padding: 4px 6px;
 
             border: none;
-
             background: transparent;
 
             color: #64748b;
 
             cursor: pointer;
-
             font-size: 15px;
         }
 
         .password-toggle:hover {
-
             color: #38bdf8;
         }
 
         .login-button {
-
             width: 100%;
-
             height: 52px;
 
             margin-top: 8px;
 
             border: none;
-
             border-radius: 13px;
 
             color: #ffffff;
@@ -439,9 +349,7 @@
                 );
 
             font-family: inherit;
-
             font-size: 14px;
-
             font-weight: 750;
 
             cursor: pointer;
@@ -457,7 +365,6 @@
         }
 
         .login-button:hover {
-
             transform:
                 translateY(-2px);
 
@@ -467,45 +374,35 @@
         }
 
         .login-button:active {
-
             transform:
                 translateY(0);
         }
 
         .login-button:disabled {
-
             cursor: wait;
         }
 
         .error {
-
             min-height: 20px;
 
             margin-top: 14px;
-
             padding: 0 4px;
 
             color: #fca5a5;
 
             text-align: center;
-
             font-size: 13px;
-
             font-weight: 600;
         }
 
         .security {
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
 
             gap: 7px;
 
             margin-top: 24px;
-
             padding-top: 20px;
 
             border-top:
@@ -513,14 +410,11 @@
                 rgba(255, 255, 255, 0.07);
 
             color: #64748b;
-
             font-size: 11px;
         }
 
         .security-dot {
-
             width: 7px;
-
             height: 7px;
 
             border-radius: 50%;
@@ -533,25 +427,21 @@
         }
 
         .footer {
-
             margin-top: 18px;
 
             text-align: center;
 
             color: #475569;
-
             font-size: 11px;
         }
 
         @media (max-width: 480px) {
 
             body {
-
                 padding: 15px;
             }
 
             .login-box {
-
                 padding:
                     34px 23px 27px;
 
@@ -559,9 +449,7 @@
             }
 
             .brand-icon {
-
                 width: 68px;
-
                 height: 68px;
 
                 border-radius: 21px;
@@ -570,12 +458,10 @@
             }
 
             .brand h1 {
-
                 font-size: 22px;
             }
 
             .login-title h2 {
-
                 font-size: 19px;
             }
         }
@@ -583,7 +469,6 @@
     </style>
 
 </head>
-
 
 <body>
 
@@ -594,7 +479,6 @@
         <div class="orb orb-two"></div>
 
     </div>
-
 
     <div class="login-wrapper">
 
@@ -616,7 +500,6 @@
 
             </div>
 
-
             <div class="login-title">
 
                 <h2>
@@ -628,7 +511,6 @@
                 </span>
 
             </div>
-
 
             <div class="field">
 
@@ -653,7 +535,6 @@
 
             </div>
 
-
             <div class="field">
 
                 <label for="password">
@@ -671,14 +552,12 @@
                         id="password"
                         placeholder="Ingresa tu contraseña"
                         autocomplete="current-password"
-                        onkeydown="manejarEnter(event)"
                     >
 
                     <button
                         type="button"
                         class="password-toggle"
                         id="passwordToggle"
-                        onclick="mostrarPassword()"
                         aria-label="Mostrar contraseña"
                     >
                         👁
@@ -688,22 +567,18 @@
 
             </div>
 
-
             <button
                 type="button"
                 class="login-button"
                 id="loginButton"
-                onclick="login()"
             >
                 Ingresar al panel
             </button>
-
 
             <div
                 class="error"
                 id="error"
             ></div>
-
 
             <div class="security">
 
@@ -715,58 +590,54 @@
 
         </div>
 
-
         <div class="footer">
-
             Lunas de Octubre · Panel Administrativo
-
         </div>
 
     </div>
 
-
     <script>
+
+        const usuarioInput =
+            document.getElementById("usuario");
+
+        const passwordInput =
+            document.getElementById("password");
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+        const passwordToggle =
+            document.getElementById("passwordToggle");
+
+        const errorElement =
+            document.getElementById("error");
+
 
         async function login() {
 
             const user =
-                document
-                    .getElementById("usuario")
-                    .value
-                    .trim();
+                usuarioInput.value.trim();
 
             const pass =
-                document
-                    .getElementById("password")
-                    .value;
+                passwordInput.value;
 
-            const error =
-                document
-                    .getElementById("error");
-
-            const button =
-                document
-                    .getElementById("loginButton");
-
-
-            error.textContent = "";
-
+            errorElement.textContent = "";
 
             if (!user || !pass) {
 
-                error.textContent =
+                errorElement.textContent =
                     "Completa el usuario y la contraseña.";
 
                 return;
             }
 
-
-            button.textContent =
+            loginButton.textContent =
                 "Verificando...";
 
-            button.disabled = true;
+            loginButton.disabled = true;
 
-            button.style.opacity = "0.7";
+            loginButton.style.opacity = "0.7";
 
 
             try {
@@ -792,8 +663,18 @@
                     );
 
 
-                const datos =
-                    await respuesta.json();
+                let datos = {};
+
+                try {
+
+                    datos =
+                        await respuesta.json();
+
+                } catch {
+
+                    datos = {};
+
+                }
 
 
                 if (!respuesta.ok) {
@@ -805,35 +686,39 @@
                 }
 
 
-                button.textContent =
+                loginButton.textContent =
                     "Acceso concedido";
 
 
                 /*
-                 * Ya no guardamos:
+                 * La sesión NO se guarda
+                 * en localStorage.
                  *
-                 * localStorage.setItem("login", "ok")
-                 *
-                 * La sesión ahora la controla
-                 * el servidor mediante una cookie segura.
+                 * El servidor crea una
+                 * cookie segura HttpOnly.
                  */
-
 
                 window.location.href =
                     "/admin.html";
 
+
             } catch (errorLogin) {
 
-                error.textContent =
+                console.error(
+                    "Error de login:",
+                    errorLogin
+                );
+
+                errorElement.textContent =
                     errorLogin.message ||
                     "No fue posible iniciar sesión.";
 
-                button.textContent =
+                loginButton.textContent =
                     "Ingresar al panel";
 
-                button.disabled = false;
+                loginButton.disabled = false;
 
-                button.style.opacity = "1";
+                loginButton.style.opacity = "1";
             }
 
         }
@@ -841,35 +726,31 @@
 
         function mostrarPassword() {
 
-            const password =
-                document
-                    .getElementById("password");
-
-            const toggle =
-                document
-                    .getElementById("passwordToggle");
-
-
             if (
-                password.type === "password"
+                passwordInput.type ===
+                "password"
             ) {
 
-                password.type = "text";
+                passwordInput.type =
+                    "text";
 
-                toggle.textContent = "🙈";
+                passwordToggle.textContent =
+                    "🙈";
 
-                toggle.setAttribute(
+                passwordToggle.setAttribute(
                     "aria-label",
                     "Ocultar contraseña"
                 );
 
             } else {
 
-                password.type = "password";
+                passwordInput.type =
+                    "password";
 
-                toggle.textContent = "👁";
+                passwordToggle.textContent =
+                    "👁";
 
-                toggle.setAttribute(
+                passwordToggle.setAttribute(
                     "aria-label",
                     "Mostrar contraseña"
                 );
@@ -878,18 +759,34 @@
         }
 
 
-        function manejarEnter(event) {
+        loginButton.addEventListener(
+            "click",
+            login
+        );
 
-            if (event.key === "Enter") {
 
-                login();
+        passwordToggle.addEventListener(
+            "click",
+            mostrarPassword
+        );
+
+
+        passwordInput.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    login();
+                }
 
             }
-
-        }
+        );
 
     </script>
-
 
 </body>
 

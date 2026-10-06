@@ -24,19 +24,125 @@ let temporizadorBusqueda = null;
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    async () => {
+
+        console.log("");
+        console.log(
+            "========================================"
+        );
+        console.log(
+            "🟢 INVENTARIO.JS FUE CARGADO"
+        );
+        console.log(
+            "========================================"
+        );
+
+        const autenticado =
+            await verificarSesion();
+
+        console.log(
+            "🔐 Resultado autenticación:",
+            autenticado
+        );
+
+        if (!autenticado) {
+
+            console.log(
+                "🚫 Inventario: no se cargarán los datos."
+            );
+
+            return;
+        }
+
+        console.log(
+            "✅ Inventario: sesión confirmada."
+        );
 
         mostrarFecha();
 
         configurarBusqueda();
 
-        cargarInventario();
+        await cargarInventario();
 
-        cargarMovimientos();
+        await cargarMovimientos();
+
+        console.log(
+            "✅ Inventario: inicialización completada."
+        );
 
     }
 );
+/* =========================================================
+   SESIÓN SEGURA
+   ========================================================= */
 
+async function verificarSesion() {
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/auth/me",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store"
+                }
+            );
+
+        if (!respuesta.ok) {
+
+            console.log(
+                "🚫 Inventario: sesión no válida."
+            );
+
+            window.location.replace(
+                "/login.html"
+            );
+
+            return false;
+        }
+
+        const datos =
+            await respuesta.json();
+
+        if (
+            !datos ||
+            !datos.autenticado
+        ) {
+
+            console.log(
+                "🚫 Inventario: autenticación rechazada."
+            );
+
+            window.location.replace(
+                "/login.html"
+            );
+
+            return false;
+        }
+
+        console.log(
+            "✅ Inventario: sesión válida."
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Inventario: error verificando sesión:",
+            error
+        );
+
+        window.location.replace(
+            "/login.html"
+        );
+
+        return false;
+    }
+
+}
 
 /* =========================================================
    FECHA ACTUAL
@@ -198,25 +304,85 @@ async function cargarMovimientos() {
     }
 
 
+    console.log("");
+    console.log(
+        "========================================"
+    );
+    console.log(
+        "📦 CARGANDO MOVIMIENTOS"
+    );
+    console.log(
+        "========================================"
+    );
+
+
     try {
 
         const respuesta =
             await fetch(
-                "/api/inventario/movimientos"
+                "/api/inventario/movimientos",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store"
+                }
             );
+
+
+        console.log(
+            "📡 Status movimientos:",
+            respuesta.status
+        );
+
+        console.log(
+            "📡 OK movimientos:",
+            respuesta.ok
+        );
+
+
+        const texto =
+            await respuesta.text();
+
+
+        console.log(
+            "📄 Respuesta movimientos:",
+            texto
+        );
 
 
         if (!respuesta.ok) {
 
             throw new Error(
-                "No fue posible obtener los movimientos."
+                `Servidor respondió ${respuesta.status}: ${texto || "sin respuesta"}`
             );
 
         }
 
 
-        const datos =
-            await respuesta.json();
+        let datos;
+
+        try {
+
+            datos =
+                JSON.parse(texto);
+
+        } catch (error) {
+
+            console.error(
+                "❌ La respuesta no es JSON válido."
+            );
+
+            throw new Error(
+                "El servidor devolvió una respuesta inválida."
+            );
+
+        }
+
+
+        console.log(
+            "📦 Datos movimientos:",
+            datos
+        );
 
 
         if (!Array.isArray(datos)) {
@@ -228,10 +394,27 @@ async function cargarMovimientos() {
         }
 
 
-        movimientos = datos;
+        movimientos =
+            datos;
+
+
+        console.log(
+            "🔢 Movimientos recibidos:",
+            movimientos.length
+        );
 
 
         renderizarMovimientos();
+
+
+        console.log(
+            "✅ Movimientos cargados correctamente."
+        );
+
+        console.log(
+            "========================================"
+        );
+
 
     } catch (error) {
 
@@ -267,7 +450,6 @@ async function cargarMovimientos() {
     }
 
 }
-
 
 /* =========================================================
    RESUMEN

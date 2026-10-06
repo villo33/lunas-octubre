@@ -347,29 +347,235 @@ function verificarTokenSesion(token) {
    ========================================================= */
 
 function obtenerSesion(req) {
+
+    console.log("");
+    console.log("========================================");
+    console.log("🔎 DIAGNÓSTICO DE AUTENTICACIÓN");
+    console.log("========================================");
+    console.log("🌐 Método:", req.method);
+    console.log("📍 Ruta:", req.originalUrl);
+
+    const headerCookie =
+        req.headers.cookie;
+
+    console.log(
+        "🍪 Header Cookie recibido:",
+        headerCookie
+            ? "SÍ"
+            : "NO"
+    );
+
+    if (!headerCookie) {
+
+        console.log(
+            "❌ No llegó ninguna cookie al servidor."
+        );
+
+        console.log(
+            "========================================"
+        );
+
+        return null;
+    }
+
     const cookies =
         obtenerCookies(req);
 
     const token =
         cookies[SESSION_COOKIE];
 
+    console.log(
+        "🍪 Cookie lunas_session encontrada:",
+        token
+            ? "SÍ"
+            : "NO"
+    );
+
     if (!token) {
+
+        console.log(
+            "❌ El navegador envió cookies, pero no llegó:",
+            SESSION_COOKIE
+        );
+
+        console.log(
+            "========================================"
+        );
+
         return null;
     }
+
+    /*
+       NO mostramos el token.
+       Solamente mostramos su longitud
+       para comprobar que realmente llegó.
+    */
+
+    console.log(
+        "🔐 Longitud del token:",
+        token.length
+    );
 
     const sesion =
         verificarTokenSesion(
             token
         );
 
+    console.log(
+        "🔐 Token válido:",
+        sesion
+            ? "SÍ"
+            : "NO"
+    );
+
     if (!sesion) {
+
+        console.log(
+            "❌ El token llegó, pero no pudo validarse."
+        );
+
+        console.log(
+            "========================================"
+        );
+
         return null;
     }
+
+    console.log(
+        "👤 Usuario dentro de sesión:",
+        sesion.usuario
+    );
+
+    console.log(
+        "⏳ Sesión expira:",
+        new Date(
+            sesion.expiresAt
+        ).toLocaleString()
+    );
+
+    console.log(
+        "========================================"
+    );
 
     return {
         token,
         ...sesion
     };
+}
+
+
+/* =========================================================
+   MIDDLEWARE DE AUTENTICACIÓN
+   ========================================================= */
+
+function requireAuth(
+    req,
+    res,
+    next
+) {
+
+    console.log("");
+    console.log("========================================");
+    console.log("🛡️ REQUIRE AUTH");
+    console.log("========================================");
+    console.log(
+        "📍 Ruta protegida:",
+        req.method,
+        req.originalUrl
+    );
+
+    const sesion =
+        obtenerSesion(req);
+
+    if (!sesion) {
+
+        console.log(
+            "🚫 requireAuth: SESIÓN NO VÁLIDA"
+        );
+
+        if (
+            req.path.startsWith("/api/")
+        ) {
+
+            console.log(
+                "📡 Respuesta API: 401"
+            );
+
+            console.log(
+                "========================================"
+            );
+
+            return res.status(401).json({
+                error:
+                    "Sesión no válida o expirada."
+            });
+        }
+
+        console.log(
+            "↪️ Redirigiendo a /login.html"
+        );
+
+        console.log(
+            "========================================"
+        );
+
+        return res.redirect(
+            "/login.html"
+        );
+    }
+
+    console.log(
+        "✅ Sesión encontrada."
+    );
+
+    /*
+       Comprobamos además que el usuario
+       de la sesión siga correspondiendo
+       al administrador configurado.
+    */
+
+    const usuarioAutorizado =
+        compararSeguramente(
+            sesion.usuario,
+            ADMIN_USER
+        );
+
+    console.log(
+        "👤 Usuario autorizado:",
+        usuarioAutorizado
+            ? "SÍ"
+            : "NO"
+    );
+
+    if (!usuarioAutorizado) {
+
+        console.log(
+            "🚫 requireAuth: USUARIO NO AUTORIZADO"
+        );
+
+        console.log(
+            "========================================"
+        );
+
+        return res.status(401).json({
+            error:
+                "Sesión no autorizada."
+        });
+    }
+
+    req.sesion =
+        sesion;
+
+    console.log(
+        "✅ requireAuth: ACCESO PERMITIDO"
+    );
+
+    console.log(
+        "========================================"
+    );
+    console.log("");
+
+    next();
 }
 
 /* =========================================================
@@ -381,6 +587,7 @@ function establecerCookieSesion(
     res,
     token
 ) {
+
     const protocolo =
         String(
             req.headers[
@@ -427,104 +634,6 @@ function establecerCookieSesion(
         "🔐 HTTPS detectado:",
         esHttps
     );
-}
-
-/* =========================================================
-   ELIMINAR COOKIE DE SESIÓN
-   ========================================================= */
-
-function eliminarCookieSesion(
-    req,
-    res
-) {
-    const protocolo =
-        String(
-            req.headers[
-                "x-forwarded-proto"
-            ] || ""
-        )
-            .split(",")[0]
-            .trim();
-
-    const esHttps =
-        req.secure ||
-        protocolo === "https";
-
-    const cookie = [
-        `${SESSION_COOKIE}=`,
-
-        "HttpOnly",
-
-        "Path=/",
-
-        "SameSite=Lax",
-
-        "Max-Age=0",
-
-        "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
-
-        esHttps
-            ? "Secure"
-            : ""
-    ]
-        .filter(Boolean)
-        .join("; ");
-
-    res.setHeader(
-        "Set-Cookie",
-        cookie
-    );
-}
-
-/* =========================================================
-   MIDDLEWARE DE AUTENTICACIÓN
-   ========================================================= */
-
-function requireAuth(
-    req,
-    res,
-    next
-) {
-    const sesion =
-        obtenerSesion(req);
-
-    if (!sesion) {
-        if (
-            req.path.startsWith("/api/")
-        ) {
-            return res.status(401).json({
-                error:
-                    "Sesión no válida o expirada."
-            });
-        }
-
-        return res.redirect(
-            "/login.html"
-        );
-    }
-
-    /*
-       Comprobamos además que el usuario
-       de la sesión siga correspondiendo
-       al administrador configurado.
-    */
-
-    if (
-        !compararSeguramente(
-            sesion.usuario,
-            ADMIN_USER
-        )
-    ) {
-        return res.status(401).json({
-            error:
-                "Sesión no autorizada."
-        });
-    }
-
-    req.sesion =
-        sesion;
-
-    next();
 }
 
 /* =========================================================
@@ -3142,11 +3251,70 @@ app.get(
     }
 );
 
+
+app.get(
+    "/api/inventario/diagnostico-columnas",
+    requireAuth,
+    async (req, res) => {
+        try {
+
+            const resultado =
+                await pool.query(
+                    `
+                    SELECT
+                        column_name,
+                        data_type
+                    FROM information_schema.columns
+                    WHERE table_name =
+                        'movimientos_inventario'
+                    ORDER BY ordinal_position
+                    `
+                );
+
+            console.log("");
+            console.log(
+                "========================================"
+            );
+            console.log(
+                "🔎 COLUMNAS movimientos_inventario"
+            );
+            console.log(
+                "========================================"
+            );
+
+            console.table(
+                resultado.rows
+            );
+
+            console.log(
+                "========================================"
+            );
+
+            res.json(
+                resultado.rows
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error consultando columnas:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    error.message
+            });
+        }
+    }
+);
+
 app.get(
     "/api/inventario/movimientos",
     requireAuth,
     async (req, res) => {
         try {
+
             const resultado =
                 await pool.query(
                     `
@@ -3158,7 +3326,7 @@ app.get(
                         mi.motivo,
                         mi.referencia_tipo,
                         mi.referencia_id,
-                        mi.created_at,
+                        mi.fecha,
 
                         p.nombre AS producto_nombre,
                         p.codigo AS producto_codigo,
@@ -3171,7 +3339,7 @@ app.get(
                         mi.producto_id
 
                     ORDER BY
-                        mi.created_at DESC,
+                        mi.fecha DESC,
                         mi.id DESC
                     `
                 );
@@ -3181,6 +3349,7 @@ app.get(
             );
 
         } catch (error) {
+
             console.error(
                 "❌ Error obteniendo movimientos de inventario:",
                 error
